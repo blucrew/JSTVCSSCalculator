@@ -823,9 +823,14 @@
         const kf = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — Alert Overlay — ${new Date().toLocaleDateString()} */\n`;
-        code += `span.uppercase.font-bold { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} display: block !important; font-size: 1.5rem !important; margin-bottom: 0.5rem !important; text-transform: uppercase !important; letter-spacing: 3px !important; }\n`;
-        code += `span.font.italic { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} font-size: 3rem !important; font-weight: 900 !important; display: block !important; }\n`;
-        code += `span.line { background-color: ${c.glow} !important; display: block !important; height: 2px !important; }\n`;
+        /* Container — centres the two-line layout */
+        code += `[class*="alert"] { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; gap: 14px !important; }\n`;
+        /* Header line — NEW FOLLOWER / NEW SUB etc. */
+        code += `[class*="alert"] [class*="uppercase"], [class*="alert"] span:first-child, span.uppercase.font-bold { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} display: block !important; font-size: 1.5rem !important; text-transform: uppercase !important; letter-spacing: 3px !important; margin-bottom: 0 !important; }\n`;
+        /* Separator line — injected via ::after since Joystick DOM has no .line element */
+        code += `[class*="alert"] [class*="uppercase"]::after, [class*="alert"] span:first-child::after, span.uppercase.font-bold::after { content: '' !important; display: block !important; height: 2px !important; width: 80% !important; margin: 8px auto 0 !important; background: ${c.glow} !important; box-shadow: 0 0 ${g} ${c.glow} !important; }\n`;
+        /* Username line */
+        code += `[class*="alert"] [class*="text-3xl"], [class*="alert"] [class*="text-5xl"], [class*="alert"] span:last-child, span.font.italic { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} font-size: 3rem !important; font-weight: 900 !important; display: block !important; }\n`;
         return kf + code;
     }
 
