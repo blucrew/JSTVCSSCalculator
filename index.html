@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joystick.TV CSS Styler</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Orbitron:wght@400;900&family=Permanent+Marker&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+New&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #121212; --panel: #1e1e1e; --accent: #00d2ff; --text: #e0e0e0; }
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #121212; }
+        ::-webkit-scrollbar-thumb { background: #0affff; border-radius: 4px; }
+        body { margin: 0; display: flex; height: 100vh; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+        .sidebar { width: 360px; background: var(--panel); border-right: 1px solid #333; padding: 0; overflow: hidden; display: flex; flex-direction: column; box-shadow: 5px 0 20px rgba(0,0,0,0.5); z-index: 2; }
+        .sidebar-scroll { padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .sidebar-footer { padding: 20px; background: var(--panel); border-top: 1px solid #333; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -4px 12px rgba(0,0,0,0.2); z-index: 10; flex-shrink: 0; }
+        h1 { margin: 0 0 5px 0; color: var(--accent); font-size: 1.1rem; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .group { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid #333; }
+        .hidden { display: none !important; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; color: #aaa; }
+        select, input[type="color"], input[type="range"] { width: 100%; padding: 8px; background: #121212; border: 1px solid #444; color: white; border-radius: 4px; outline: none; font-size: 0.9rem; cursor: pointer; }
+        select:focus, input:focus { border-color: var(--accent); }
+        input[type="range"] { padding: 0; height: 30px; }
+        .btn-copy, .btn-reset { padding: 12px; width: 100%; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: background 0.3s; }
+        .btn-copy { background: var(--accent); color: #000; border: none; }
+        .btn-copy:hover { background: #00aaff; }
+        .btn-reset { background: #444; color: #fff; border: 1px solid #666; }
+        .btn-reset:hover { background: #555; }
+        textarea { width: 100%; height: 150px; background: #000; border: 1px solid #333; color: #0f0; font-family: monospace; padding: 10px; font-size: 10px; margin-top: 0; resize: vertical; }
+
+        /* ── Preview area ───────────────────────────────── */
+        .preview-container { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; background-image: linear-gradient(45deg, #111 25%, transparent 25%), linear-gradient(-45deg, #111 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #111 75%), linear-gradient(-45deg, transparent 75%, #111 75%); background-size: 20px 20px; }
+        #bgLayer { position: absolute; inset: 0; background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 0; }
+        #preview-stage { position: relative; z-index: 1; width: 90%; max-width: 800px; min-height: 400px; display: flex; flex-direction: column; justify-content: flex-end; padding: 40px; font-family: inherit; }
+
+        /* ── Chat bubbles ───────────────────────────────── */
+        .p-bubble { padding: 10px 15px; margin-bottom: 8px; border-radius: 12px; background: rgba(10,10,10,0.95); border: 2px solid #fff; width: fit-content; max-width: 85%; animation: fadeIn 0.5s ease; transition: opacity 0.5s ease; line-height: 1.6; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .p-uname { font-weight: 900; padding: 2px 6px; border-radius: 4px; margin-right: 4px; display: inline-block; }
+
+        /* ── Shape grid ─────────────────────────────────── */
+        .shape-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 8px; }
+        .shape-btn { background: #000; border: 1px solid #444; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 6px; transition: 0.2s; }
+        .shape-btn:hover { background: rgba(0,210,255,0.1); }
+        .shape-btn.active { border-color: var(--accent); background: rgba(0,210,255,0.2); }
+        .v-circle { width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+        .v-square { width: 14px; height: 14px; background: #fff; }
+        .v-diamond { width: 14px; height: 14px; background: #fff; transform: rotate(45deg); }
+
+        /* ── Goal bar ───────────────────────────────────── */
+        .p-goal-trk { background: rgba(0,0,0,0.7); border: 2px solid #555; height: 32px; border-radius: 16px; position: relative; overflow: hidden; }
+        .p-goal-fill { height: 100%; position: absolute; left: 0; top: 0; }
+
+        /* ── Toggle switch ──────────────────────────────── */
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* ── Timeout stepper ────────────────────────────── */
+        .stepper { display: flex; align-items: center; background: #121212; border: 1px solid #444; border-radius: 4px; overflow: hidden; margin-top: 5px; flex: 1; }
+        .step-btn { background: #222; color: #fff; border: none; width: 40px; height: 35px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .step-btn:hover { background: #333; }
+        .step-btn:active { background: var(--accent); color: #000; }
+        #timeoutDisplay { border: none; text-align: center; background: transparent; font-family: 'Inter', sans-serif; font-weight: bold; pointer-events: none; width: 100%; color: #fff; }
+
+        /* ── Misc UI ────────────────────────────────────── */
+        .instructions { font-size: 0.8rem; color: #ccc; margin-bottom: 15px; line-height: 1.4; background: rgba(0,210,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid var(--accent); }
+        .instructions a { color: var(--accent); text-decoration: none; }
+        .instructions a:hover { text-decoration: underline; }
+        .type-hint { font-size: 0.75rem; color: #666; margin-top: 4px; font-style: italic; }
+        .toggle-row { display: flex; align-items: center; gap: 10px; }
+        .toggle-row label { margin: 0; color: var(--text); font-size: 0.9rem; font-weight: 400; cursor: pointer; }
+        .sub-hint { font-size: 0.72rem; color: #555; margin-top: 5px; }
+
+        /* ── Glow combined row ──────────────────────────── */
+        .glow-row { display: flex; gap: 12px; align-items: flex-end; }
+        .glow-color-wrap { flex: 0 0 110px; }
+        .glow-intensity-wrap { flex: 1; }
+
+        /* ── Color + eyedropper rows ────────────────────── */
+        .color-pick-row { display: flex; gap: 4px; align-items: stretch; }
+        .color-pick-row input[type="color"] { flex: 1; min-width: 0; height: 38px; padding: 2px 4px; }
+
+        /* ── Custom theme reveal panel ──────────────────── */
+        #customThemeWrap {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #333;
+        }
+        #customThemeWrap label { color: #888; font-size: 0.8rem; margin-bottom: 6px; }
+
+        /* ── Secondary / dropper buttons ────────────────── */
+        .btn-secondary { background: #1a1a1a; border: 1px solid #444; color: #ccc; padding: 8px 10px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-family: 'Inter', sans-serif; transition: 0.2s; white-space: nowrap; }
+        .btn-secondary:hover { background: #2a2a2a; border-color: #666; color: #fff; }
+        .btn-dropper { background: #1a1a1a; border: 1px solid #444; color: #ccc; width: 38px; height: 38px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.2s; padding: 0; }
+        .btn-dropper:hover:not(:disabled) { background: rgba(0,210,255,0.15); border-color: var(--accent); color: var(--accent); }
+        .btn-dropper:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* ── BG canvas thumbnail ────────────────────────── */
+        #bgCanvas { display: none; width: 100%; height: 72px; border-radius: 6px; cursor: crosshair; border: 1px solid #444; margin-top: 8px; }
+        #bgCanvas:hover { border-color: var(--accent); }
+        .canvas-hint { display: none; font-size: 0.72rem; color: #555; margin-top: 4px; }
+
+        /* ── Swatch (glow color feedback) ───────────────── */
+        @keyframes swatchPop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
+        #glowSwatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #666; flex-shrink: 0; align-self: center; }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="sidebar-scroll">
+        <h1>Joystick.TV CSS Styler</h1>
+
+        <div class="instructions">
+            <strong>How to use:</strong><br>
+            1. Select a "Vanilla" scene in <a href="https://joystick.tv/scenes" target="_blank">Joystick.TV Scenes</a>.<br>
+            2. Pick your overlay type &amp; customize.<br>
+            3. Copy the CSS.<br>
+            4. In OBS: Properties → Custom CSS → Paste → Refresh cache.
+        </div>
+
+        <!-- ── Preview Background ──────────────────────── -->
+        <div class="group">
+            <label>Preview Background</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button id="bgUploadBtn" class="btn-secondary" style="flex:1;">📷 Upload Image</button>
+                <button id="bgClearBtn" class="btn-secondary" style="display:none;">✕ Clear</button>
+            </div>
+            <input type="file" id="bgFileInput" accept="image/*" style="display:none;">
+            <canvas id="bgCanvas" title="Click anywhere to sample that color as your Glow Color"></canvas>
+            <div class="canvas-hint" id="canvasHint">
+                🖰&nbsp;Click image to sample a color &nbsp;→&nbsp;
+                <span id="glowSwatch"></span>
+                &nbsp;Glow Color
+            </div>
+        </div>
+
+        <!-- ── 1. Overlay Type ──────────────────────────── -->
+        <div class="group">
+            <label>Overlay Type</label>
+            <select id="mainSelect">
+                <optgroup label="── Chat ──">
+                    <option value="chat" selected>Chat Overlay</option>
+                </optgroup>
+                <optgroup label="── Alerts ──">
+                    <option value="alert">Alert Overlay</option>
+                </optgroup>
+                <optgroup label="── Goals ──">
+                    <option value="goal_tip">Tip Goal</option>
+                    <option value="goal_ms">Milestone Goal</option>
+                </optgroup>
+                <optgroup label="── Lists ──">
+                    <option value="list_ev">Event List</option>
+                    <option value="list_tk">Tip Ticker</option>
+                </optgroup>
+                <optgroup label="── Labels ──">
+                    <option value="label_lt">Largest Tipper</option>
+                    <option value="label_lf">Latest Follower</option>
+                    <option value="label_tp">Latest Tipper</option>
+                    <option value="label_ls">Latest Subscriber</option>
+                    <option value="label_ct">Chat Timer</option>
+                </optgroup>
+            </select>
+            <div class="type-hint" id="typeHint"></div>
+        </div>
+
+        <!-- ── 2. Font Family ───────────────────────────── -->
+        <div class="group">
+            <label>Font Family</label>
+            <select id="fontSelect">
+                <option value="'Inter', sans-serif">Inter (Modern)</option>
+                <option value="'Orbitron', sans-serif">Orbitron (Sci-Fi)</option>
+                <option value="'Courier New', monospace">Courier (Retro)</option>
+                <option value="'Permanent Marker', cursive">Marker (Handwritten)</option>
+            </select>
+        </div>
+
+        <!-- ── 3. Theme Color + Custom picker ──────────── -->
+        <div class="group">
+            <label>Theme Color (Background/Gradient)</label>
+            <select id="themeSelect">
+                <!-- Custom solid color — reveals inline picker below -->
+                <optgroup label="── Custom ──">
+                    <option value="custom">✎ Custom Color…</option>
+                </optgroup>
+                <optgroup label="Neon Gradients">
+                    <option value="purple" selected>Neon Purple</option>
+                    <option value="blue">Cyber Blue</option>
+                    <option value="green">Matrix Green</option>
+                    <option value="red">Sith Red</option>
+                    <option value="gold">Luxury Gold</option>
+                </optgroup>
+                <optgroup label="Neon Solids">
+                    <option value="n-pink">Neon Pink</option>
+                    <option value="n-orange">Neon Orange</option>
+                    <option value="n-cyan">Neon Cyan</option>
+                    <option value="n-yellow">Neon Yellow</option>
+                </optgroup>
+                <optgroup label="Pride (Animated)">
+                    <option value="f-rainbow-soft">Rainbow</option>
+                    <option value="f-gay-soft">Gay Men (Vincian)</option>
+                    <option value="f-lesbian-soft">Lesbian</option>
+                    <option value="f-trans-soft">Transgender</option>
+                    <option value="f-asexual-soft">Asexual</option>
+                    <option value="f-nonbinary-soft">Nonbinary</option>
+                    <option value="pride_bi">Bisexual</option>
+                </optgroup>
+                <optgroup label="Pride (Flag Bands)">
+                    <option value="f-rainbow-hard">Rainbow (Solid)</option>
+                    <option value="f-gay-hard">Gay Men (Solid)</option>
+                    <option value="f-lesbian-hard">Lesbian (Solid)</option>
+                    <option value="f-bear-hard">Bear Brotherhood</option>
+                    <option value="f-asexual-hard">Asexual (Solid)</option>
+                    <option value="f-nonbinary-hard">Nonbinary (Solid)</option>
+                </optgroup>
+                <optgroup label="Dark">
+                    <option value="solid">Solid Dark</option>
+                </optgroup>
+            </select>
+
+            <!-- Revealed when "Custom Color…" is selected -->
+            <div id="customThemeWrap" style="display:none;">
+                <label>Pick your color</label>
+                <div class="color-pick-row">
+                    <input type="color" id="customThemeColor" value="#ff6600">
+                    <button id="eyedropThemeBtn" class="btn-dropper" title="Sample color from screen (Chrome &amp; Edge)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.41-1.42-1.42 1.42 1.41 1.41L6 16.22V20h3.78l6.6-6.6 1.41 1.41 1.42-1.42-1.42-1.41 3.12-3.12a1 1 0 000-1.63z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="sub-hint">Glow color syncs automatically — adjust independently below</div>
+                <div id="eyedropThemeNote" class="sub-hint" style="display:none;">⚠ Eyedropper requires Chrome or Edge</div>
+            </div>
+        </div>
+
+        <!-- ── 4. Label Display (label types only) ─────── -->
+        <div id="groupLabelPrefix" class="group hidden">
+            <label>Label Display</label>
+            <div class="toggle-row">
+                <label class="switch" style="margin:0; flex-shrink:0;">
+                    <input type="checkbox" id="labelPrefix" checked>
+                    <span class="slider"></span>
+                </label>
+                <label for="labelPrefix">Show label prefix (e.g. "Latest Tipper: Name")</label>
+            </div>
+        </div>
+
+        <!-- ── 5. Animation Speed ───────────────────────── -->
+        <div class="group">
+            <label>Animation Speed</label>
+            <select id="animSpeed">
+                <option value="slow">Slow (12s)</option>
+                <option value="medium" selected>Medium (8s)</option>
+                <option value="fast">Fast (4s)</option>
+            </select>
+        </div>
+
+        <!-- ── 6. Glow — Color + Eyedropper + Intensity ── -->
+        <div class="group">
+            <div class="glow-row">
+                <div class="glow-color-wrap">
+                    <label>Glow Color</label>
+                    <div class="color-pick-row">
+                        <input type="color" id="glowColor" value="#ff00ff">
+                        <button id="eyedropBtn" class="btn-dropper" title="Sample any color from the screen (Chrome &amp; Edge)">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.41-1.42-1.42 1.42 1.41 1.41L6 16.22V20h3.78l6.6-6.6 1.41 1.41 1.42-1.42-1.42-1.41 3.12-3.12a1 1 0 000-1.63z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="glow-intensity-wrap">
+                    <label>Intensity</label>
+                    <select id="glowSelect">
+                        <option value="0">None</option>
+                        <option value="5px" selected>Low (5px)</option>
+                        <option value="12px">Medium (12px)</option>
+                        <option value="25px">High (25px)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="eyedropNote" class="sub-hint" style="display:none;">⚠ Eyedropper requires Chrome or Edge</div>
+        </div>
+
+        <!-- ── 7. Bubble / Border Style (chat only) ────── -->
+        <div class="group" id="groupBubble">
+            <label>Bubble / Border Style</label>
+            <select id="bubbleStyle">
+                <option value="pulse" selected>Pulsing Glow</option>
+                <option value="solid">Solid Border</option>
+                <option value="cyber">Cyberpunk Edge</option>
+                <option value="plasma">Plasma Border</option>
+            </select>
+        </div>
+
+        <!-- ── 8. Bubble Opacity (chat only) ───────────── -->
+        <div class="group" id="groupOpacity">
+            <label>Bubble Opacity</label>
+            <input type="range" id="bubbleOpacity" min="0" max="100" value="95" step="5">
+            <div id="opacityValue" style="text-align:center; margin-top:5px;">95%</div>
+        </div>
+
+        <!-- ── 9. Username Outline (chat only) ─────────── -->
+        <div class="group" id="groupUnameOutline">
+            <label>Username Outline Weight</label>
+            <select id="unameOutline">
+                <option value="0">None</option>
+                <option value="1" selected>1px (Recommended)</option>
+                <option value="2">2px (Heavy)</option>
+            </select>
+        </div>
+
+        <!-- ── 10. Username Color (chat only) ──────────── -->
+        <div class="group" id="groupUnameColor">
+            <label>Username Text Color</label>
+            <input type="color" id="chatUnameColor" value="#ffffff">
+        </div>
+
+        <!-- ── 11. Message Color (chat only) ───────────── -->
+        <div class="group" id="groupMsgColor">
+            <label>Message Text Color</label>
+            <input type="color" id="chatMsgColor" value="#ffffff">
+        </div>
+
+        <!-- ── 12. Milestone Marker Shape (goal only) ──── -->
+        <div id="groupGoal" class="group hidden">
+            <label>Milestone Marker Shape</label>
+            <div class="shape-grid">
+                <div class="shape-btn active" data-shape="circle"><div class="v-circle"></div></div>
+                <div class="shape-btn" data-shape="square"><div class="v-square"></div></div>
+                <div class="shape-btn" data-shape="diamond"><div class="v-diamond"></div></div>
+                <div class="shape-btn" data-shape="heart">❤</div>
+                <div class="shape-btn" data-shape="star">★</div>
+            </div>
+        </div>
+
+        <!-- ── 13. Event List bubble (list_ev only) ────── -->
+        <div id="groupEventBubble" class="group hidden">
+            <label>Event List Style</label>
+            <div class="toggle-row">
+                <label class="switch" style="margin:0; flex-shrink:0;">
+                    <input type="checkbox" id="eventListBubble">
+                    <span class="slider"></span>
+                </label>
+                <label for="eventListBubble">Wrap in bubble / box</label>
+            </div>
+        </div>
+
+        <!-- ── 14. Message Timeout (chat only) ─────────── -->
+        <div class="group" id="groupTimeout">
+            <label>Message Timeout (Fade Out)</label>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <label class="switch" style="margin:0;">
+                    <input type="checkbox" id="timeoutToggle" checked>
+                    <span class="slider"></span>
+                </label>
+                <div class="stepper">
+                    <button class="step-btn" id="btnTMinus">-</button>
+                    <input type="text" id="timeoutDisplay" value="15s" readonly>
+                    <button class="step-btn" id="btnTPlus">+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-footer">
+        <button class="btn-copy" id="copyBtn">COPY CSS</button>
+        <button class="btn-reset" id="resetBtn">Reset to Defaults</button>
+        <textarea id="cssOutput" readonly></textarea>
+    </div>
+</div>
+
+<div class="preview-container">
+    <div id="bgLayer"></div>
+    <div id="preview-stage"></div>
+</div>
+
+<script>
+    let simInt  = null;
+    let curShape = 'circle';
+    let tSec    = 300;
+    const storageKey = 'jtv_styler_settings';
+
+    const souls        = ['Nightdragon', 'Silas_Blu', 'DarkWolf', 'Bounty_V', 'Tirak_Floof'];
+    const chatMessages = ['This overlay looks sick!', 'hello world', 'Can you play a different game?', 'LMAO nice try', 'GG WP!'];
+
+    const typeHints = {
+        chat:     'Live chat bubbles — scrolling message feed',
+        alert:    'Pop-up alerts for follows, tips, and subs',
+        goal_tip: 'Progress bar tracking tip total toward a goal',
+        goal_ms:  'Progress bar tracking milestones',
+        list_ev:  'Recent events list — follower, sub, tip, goal',
+        list_tk:  'Horizontal scrolling tip ticker',
+        label_lt: 'Big single-name label — top tipper of session',
+        label_lf: 'Big single-name label — latest follower',
+        label_tp: 'Big single-name label — latest tipper',
+        label_ls: 'Big single-name label — latest subscriber',
+        label_ct: 'Countdown / count-up chat timer display'
+    };
+
+    const labelNames = {
+        label_lt: 'Largest Tipper',
+        label_lf: 'Latest Follower',
+        label_tp: 'Latest Tipper',
+        label_ls: 'Latest Subscriber'
+    };
+
+    const labelExamples = {
+        label_lt: 'BigTipper',
+        label_lf: 'SilasBlu',
+        label_tp: 'Kai_Butsu',
+        label_ls: 'DarkWolf'
+    };
+
+    const colors = {
+        'purple':           { bg: 'linear-gradient(90deg, #9b00ff, #ff00ff)', isGrad: 1, glow: '#ff00ff' },
+        'blue':             { bg: 'linear-gradient(90deg, #00d2ff, #0055ff)', isGrad: 1, glow: '#00d2ff' },
+        'green':            { bg: 'linear-gradient(90deg, #00ff00, #00aa00)', isGrad: 1, glow: '#00ff00' },
+        'red':              { bg: 'linear-gradient(90deg, #ff0000, #aa0000)', isGrad: 1, glow: '#ff0000' },
+        'gold':             { bg: 'linear-gradient(90deg, #ffcf00, #d4af37)', isGrad: 1, glow: '#ffcf00' },
+        'n-pink':           { bg: '#ff00aa', isGrad: 0, glow: '#ff00aa' },
+        'n-orange':         { bg: '#ffaa00', isGrad: 0, glow: '#ffaa00' },
+        'n-cyan':           { bg: '#00ffff', isGrad: 0, glow: '#00ffff' },
+        'n-yellow':         { bg: '#ffff00', isGrad: 0, glow: '#ffff00' },
+        'f-rainbow-soft':   { bg: 'linear-gradient(90deg, red, orange, yellow, green, blue, purple)', isGrad: 1, glow: '#ffffff' },
+        'f-gay-soft':       { bg: 'linear-gradient(90deg, #078d70, #26ceaa, #98e8c1, #ffffff, #7bade2, #5049cc, #3d1a78)', isGrad: 1, glow: '#26ceaa' },
+        'f-lesbian-soft':   { bg: 'linear-gradient(90deg, #D52D00, #EF7627, #FF9A56, #FFFFFF, #D162A4, #B55690, #A30262)', isGrad: 1, glow: '#FF9A56' },
+        'f-trans-soft':     { bg: 'linear-gradient(90deg, #5BCEFA, #F5A9B8, #FFFFFF, #F5A9B8, #5BCEFA)', isGrad: 1, glow: '#5BCEFA' },
+        'f-asexual-soft':   { bg: 'linear-gradient(90deg, #000000, #A3A3A3, #FFFFFF, #800080)', isGrad: 1, glow: '#800080' },
+        'f-nonbinary-soft': { bg: 'linear-gradient(90deg, #FCF434, #FFFFFF, #9C59D1, #2C2C2C)', isGrad: 1, glow: '#9C59D1' },
+        'pride_bi':         { bg: 'linear-gradient(90deg, #d60270, #9b4f96, #0038a8)', isGrad: 1, glow: '#9b4f96' },
+        'f-rainbow-hard':   { bg: 'linear-gradient(90deg, #E40303 16.6%, #FF8C00 16.6% 33.2%, #FFED00 33.2% 49.8%, #008026 49.8% 66.4%, #004DFF 66.4% 83%, #750787 83%)', isGrad: 0, glow: '#ffffff' },
+        'f-gay-hard':       { bg: 'linear-gradient(90deg, #078d70 14.2%, #26ceaa 14.2% 28.4%, #98e8c1 28.4% 42.6%, #ffffff 42.6% 57.1%, #7bade2 57.1% 71.4%, #5049cc 71.4% 85.7%, #3d1a78 85.7%)', isGrad: 0, glow: '#26ceaa' },
+        'f-lesbian-hard':   { bg: 'linear-gradient(90deg, #D52D00 14.2%, #EF7627 14.2% 28.4%, #FF9A56 28.4% 42.6%, #FFFFFF 42.6% 57.1%, #D162A4 57.1% 71.4%, #B55690 71.4% 85.7%, #A30262 85.7%)', isGrad: 0, glow: '#FF9A56' },
+        'f-bear-hard':      { bg: 'linear-gradient(90deg, #623118 14.2%, #D5641C 14.2% 28.4%, #DDBC34 28.4% 42.6%, #FFECD6 42.6% 57.1%, #FFFFFF 57.1% 71.4%, #555555 71.4% 85.7%, #000000 85.7%)', isGrad: 0, glow: '#D5641C' },
+        'f-asexual-hard':   { bg: 'linear-gradient(90deg, #000000 25%, #A3A3A3 25% 50%, #FFFFFF 50% 75%, #800080 75%)', isGrad: 0, glow: '#800080' },
+        'f-nonbinary-hard': { bg: 'linear-gradient(90deg, #FCF434 25%, #FFFFFF 25% 50%, #9C59D1 50% 75%, #2C2C2C 75%)', isGrad: 0, glow: '#9C59D1' },
+        'solid':            { bg: '#222222', isGrad: 0, glow: '#555555' }
+    };
+
+    const timeoutValues = [5, 10, 15, 30, 60, 120, 180, 300, 600];
+    let timeoutIndex = 2;
+
+    // ─── BACKGROUND IMAGE ─────────────────────────────────────────────────────
+
+    let bgObjectURL = null;
+    const bgLayer    = document.getElementById('bgLayer');
+    const bgCanvas   = document.getElementById('bgCanvas');
+    const bgCtx      = bgCanvas.getContext('2d', { willReadFrequently: true });
+    const canvasHint = document.getElementById('canvasHint');
+    const glowSwatch = document.getElementById('glowSwatch');
+
+    function flashSwatch(hex) {
+        glowSwatch.style.background = hex;
+        glowSwatch.style.animation  = 'none';
+        void glowSwatch.offsetWidth;
+        glowSwatch.style.animation  = 'swatchPop 0.25s ease';
+    }
+
+    function applyGlowColor(hex) {
+        document.getElementById('glowColor').value = hex;
+        flashSwatch(hex);
+        update();
+    }
+
+    document.getElementById('bgUploadBtn').addEventListener('click', () => document.getElementById('bgFileInput').click());
+
+    document.getElementById('bgFileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (bgObjectURL) URL.revokeObjectURL(bgObjectURL);
+        bgObjectURL = URL.createObjectURL(file);
+        bgLayer.style.backgroundImage = `url(${bgObjectURL})`;
+        const img = new Image();
+        img.onload = () => {
+            bgCanvas.width  = 320;
+            bgCanvas.height = 80;
+            bgCtx.drawImage(img, 0, 0, 320, 80);
+            bgCanvas.style.display = 'block';
+            canvasHint.style.display = 'block';
+            glowSwatch.style.background = document.getElementById('glowColor').value;
+        };
+        img.src = bgObjectURL;
+        document.getElementById('bgClearBtn').style.display = '';
+    });
+
+    document.getElementById('bgClearBtn').addEventListener('click', () => {
+        bgLayer.style.backgroundImage = '';
+        bgCanvas.style.display = 'none';
+        canvasHint.style.display = 'none';
+        if (bgObjectURL) { URL.revokeObjectURL(bgObjectURL); bgObjectURL = null; }
+        document.getElementById('bgFileInput').value = '';
+        document.getElementById('bgClearBtn').style.display = 'none';
+    });
+
+    bgCanvas.addEventListener('click', (e) => {
+        const rect = bgCanvas.getBoundingClientRect();
+        const x    = Math.floor((e.clientX - rect.left) * (bgCanvas.width  / rect.width));
+        const y    = Math.floor((e.clientY - rect.top)  * (bgCanvas.height / rect.height));
+        const [r, g, b] = bgCtx.getImageData(x, y, 1, 1).data;
+        applyGlowColor('#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join(''));
+    });
+
+    // ─── EYEDROPPERS ──────────────────────────────────────────────────────────
+
+    const hasEyeDrop = 'EyeDropper' in window;
+
+    async function openEyeDropper(onPick) {
+        if (!hasEyeDrop) return;
+        try { onPick((await new EyeDropper().open()).sRGBHex); } catch (_) {}
+    }
+
+    // Glow eyedropper
+    const eyedropBtn = document.getElementById('eyedropBtn');
+    if (!hasEyeDrop) {
+        eyedropBtn.disabled = true;
+        eyedropBtn.title = 'Eyedropper requires Chrome or Edge';
+        document.getElementById('eyedropNote').style.display = 'block';
+    }
+    eyedropBtn.addEventListener('click', () => openEyeDropper(applyGlowColor));
+
+    // Custom theme eyedropper
+    const eyedropThemeBtn = document.getElementById('eyedropThemeBtn');
+    if (!hasEyeDrop) {
+        eyedropThemeBtn.disabled = true;
+        eyedropThemeBtn.title = 'Eyedropper requires Chrome or Edge';
+        document.getElementById('eyedropThemeNote').style.display = 'block';
+    }
+    eyedropThemeBtn.addEventListener('click', () => openEyeDropper((hex) => {
+        document.getElementById('customThemeColor').value = hex;
+        applyGlowColor(hex); // also syncs glow to match
+    }));
+
+    // ─── CUSTOM THEME VISIBILITY ──────────────────────────────────────────────
+
+    function syncCustomThemeUI() {
+        const isCustom = document.getElementById('themeSelect').value === 'custom';
+        document.getElementById('customThemeWrap').style.display = isCustom ? '' : 'none';
+    }
+
+    // ─── HELPERS ──────────────────────────────────────────────────────────────
+
+    function saveSettings() {
+        const data = { timeoutIndex, curShape };
+        document.querySelectorAll('select, input').forEach(el => {
+            if (el.id) data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+        });
+        localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+
+    function loadSettings() {
+        const saved = localStorage.getItem(storageKey);
+        if (!saved) return;
+        const data = JSON.parse(saved);
+        timeoutIndex = data.timeoutIndex ?? 2;
+        curShape = data.curShape || 'circle';
+        Object.keys(data).forEach(key => {
+            const el = document.getElementById(key);
+            if (el) el[el.type === 'checkbox' ? 'checked' : 'value'] = data[key];
+        });
+        document.getElementById('opacityValue').textContent = (data.bubbleOpacity ?? 95) + '%';
+        document.querySelectorAll('.shape-btn').forEach(b => b.classList.toggle('active', b.dataset.shape === curShape));
+        syncCustomThemeUI();
+    }
+
+    /**
+     * getC — build the current color object.
+     * 'custom' theme reads the customThemeColor picker and returns a solid-color entry.
+     */
+    const getC = () => {
+        const theme = document.getElementById('themeSelect').value;
+        if (theme === 'custom') {
+            const hex = document.getElementById('customThemeColor').value;
+            return { bg: hex, isGrad: 0, glow: document.getElementById('glowColor').value };
+        }
+        return { ...(colors[theme] || colors.purple), glow: document.getElementById('glowColor').value };
+    };
+
+    const getOut = (w) => w === '1' ? '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, ' : (w === '2' ? '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, ' : '');
+    const getIco = (s) => ({ circle: '●', square: '■', diamond: '◆', heart: '❤', star: '★' }[s] || '●');
+
+    function themedText(c, dur, g) {
+        if (c.isGrad) {
+            return `background:${c.bg}; background-size:200% 100%; animation:rf ${dur} linear infinite; -webkit-background-clip:text; -webkit-text-fill-color:transparent; display:inline-block;`;
+        } else if (c.bg.includes('gradient')) {
+            return `background:${c.bg}; -webkit-background-clip:text; -webkit-text-fill-color:transparent; display:inline-block;`;
+        } else {
+            const textCol = c.bg === '#222222' ? '#ffffff' : c.bg;
+            return `color:${textCol}; text-shadow:0 0 ${g} ${c.glow};`;
+        }
+    }
+
+    function genTextStyle(c, dur, g) {
+        if (c.isGrad) {
+            return `background: ${c.bg} !important; background-size: 200% 100% !important; animation: rf ${dur} linear infinite !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;`;
+        } else if (c.bg.includes('gradient')) {
+            return `background: ${c.bg} !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;`;
+        } else {
+            const textCol = c.bg === '#222222' ? '#ffffff' : c.bg;
+            return `color: ${textCol} !important; text-shadow: 0 0 ${g} ${c.glow} !important;`;
+        }
+    }
+
+    function updateTimeoutDisplay() {
+        const val = timeoutValues[timeoutIndex];
+        document.getElementById('timeoutDisplay').value = val < 60 ? val + 's' : (val / 60) + ' min';
+    }
+
+    // ─── MAIN UPDATE ──────────────────────────────────────────────────────────
+    function update() {
+        if (simInt) clearInterval(simInt);
+        const stage = document.getElementById('preview-stage');
+        stage.innerHTML = '';
+        const type = document.getElementById('mainSelect').value;
+        const c    = getC();
+        const f    = document.getElementById('fontSelect').value;
+        const g    = document.getElementById('glowSelect').value;
+        const op   = document.getElementById('bubbleOpacity').value / 100;
+        const dur  = document.getElementById('animSpeed').value === 'slow' ? '12s' : (document.getElementById('animSpeed').value === 'fast' ? '4s' : '8s');
+
+        let dynStyle = document.getElementById('dynKeyframes');
+        if (!dynStyle) { dynStyle = document.createElement('style'); dynStyle.id = 'dynKeyframes'; document.head.appendChild(dynStyle); }
+        dynStyle.textContent = [
+            `@keyframes rf{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`,
+            `@keyframes plasmaRotate{from{background-position:0% 0%}to{background-position:100% 100%}}`,
+            `@keyframes pulseGlow{0%,100%{box-shadow:0 0 ${g} ${c.glow}}50%{box-shadow:0 0 20px ${c.glow}}}`,
+            `@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-50%)}}`
+        ].join('');
+
+        document.getElementById('typeHint').textContent = typeHints[type] || '';
+
+        const isChat  = type === 'chat';
+        const isGoal  = type.startsWith('goal');
+        const isLabel = ['label_lt', 'label_lf', 'label_tp', 'label_ls'].includes(type);
+
+        document.getElementById('groupBubble').classList.toggle('hidden', !isChat);
+        document.getElementById('groupOpacity').classList.toggle('hidden', !isChat);
+        document.getElementById('groupTimeout').classList.toggle('hidden', !isChat);
+        document.getElementById('groupUnameOutline').classList.toggle('hidden', !isChat);
+        document.getElementById('groupUnameColor').classList.toggle('hidden', !isChat);
+        document.getElementById('groupMsgColor').classList.toggle('hidden', !isChat);
+        document.getElementById('groupGoal').classList.toggle('hidden', !isGoal);
+        document.getElementById('groupLabelPrefix').classList.toggle('hidden', !isLabel);
+        document.getElementById('groupEventBubble').classList.toggle('hidden', type !== 'list_ev');
+
+        stage.style.justifyContent = (isChat || isGoal) ? 'flex-end' : 'center';
+
+        if (isChat) {
+            simChat(c, f, g, dur, op);
+            document.getElementById('cssOutput').value = genChat(c, f, g, dur, op);
+        } else if (isGoal) {
+            simGoal(c, f, g, dur, type === 'goal_tip' ? 'Tip Goal' : 'Milestone Goal');
+            document.getElementById('cssOutput').value = genGoal(c, f, g, dur);
+        } else if (type === 'alert') {
+            simAlert(c, f, g, dur);
+            document.getElementById('cssOutput').value = genAlert(c, f, g, dur);
+        } else if (type === 'list_ev') {
+            simEventList(c, f, g, dur);
+            document.getElementById('cssOutput').value = genEventList(c, f, g, dur);
+        } else if (type === 'list_tk') {
+            simTicker(c, f, g, dur);
+            document.getElementById('cssOutput').value = genLabel(c, f, g, dur, 'list_tk');
+        } else if (type === 'label_ct') {
+            simTimer(c, f, g);
+            document.getElementById('cssOutput').value = genLabel(c, f, g, dur, 'label_ct');
+        } else {
+            simLabel(c, f, g, dur, labelExamples[type] || 'Username', type);
+            document.getElementById('cssOutput').value = genLabel(c, f, g, dur, type);
+        }
+
+        saveSettings();
+    }
+
+    // ─── SIM FUNCTIONS ────────────────────────────────────────────────────────
+
+    function simChat(c, f, g, dur, op) {
+        const stage  = document.getElementById('preview-stage');
+        const to     = document.getElementById('timeoutToggle').checked ? timeoutValues[timeoutIndex] * 1000 : 'none';
+        const bStyle = document.getElementById('bubbleStyle').value;
+        const add = () => {
+            const m = document.createElement('div');
+            m.className = `p-bubble chat-message style-${bStyle}`;
+            if (bStyle === 'plasma') {
+                m.style.cssText = `font-family:${f}; border:2px solid transparent; background-image:linear-gradient(rgba(10,10,10,${op}),rgba(10,10,10,${op})),${c.bg}; background-origin:border-box; background-clip:padding-box,border-box; background-size:200% 200%; animation:plasmaRotate 3s linear infinite;`;
+            } else if (bStyle === 'cyber') {
+                m.style.cssText = `font-family:${f}; background:rgba(10,10,10,${op}); clip-path:polygon(0% 0%,95% 0%,100% 25%,100% 100%,8% 100%,0% 80%); border-radius:0; border:none; border-left:5px solid ${c.glow};`;
+            } else {
+                const bdr  = c.isGrad ? `border:2px solid transparent; border-image:${c.bg} 1;` : `border:2px solid ${c.glow};`;
+                const glow = bStyle === 'pulse' ? `box-shadow:0 0 ${g} ${c.glow};` : '';
+                m.style.cssText = `font-family:${f}; background:rgba(10,10,10,${op}); ${bdr} ${glow}`;
+            }
+            m.innerHTML = `<span class="p-uname" style="background:${c.bg}; color:${document.getElementById('chatUnameColor').value}; ${c.isGrad ? 'background-size:200% 100%; animation:rf '+dur+' linear infinite;' : ''} text-shadow:${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow};">${souls[Math.floor(Math.random()*souls.length)]}</span> : <span style="color:${document.getElementById('chatMsgColor').value}">${chatMessages[Math.floor(Math.random()*chatMessages.length)]}</span>`;
+            stage.appendChild(m);
+            if (to !== 'none') setTimeout(() => { m.style.opacity = '0'; setTimeout(() => m.remove(), 500); }, to);
+            if (stage.children.length > 8) stage.firstChild.remove();
+        };
+        add(); simInt = setInterval(add, 3000);
+    }
+
+    function simGoal(c, f, g, dur, txt) {
+        const stage     = document.getElementById('preview-stage');
+        const fillStyle = c.isGrad
+            ? `background:${c.bg}; background-size:200% 100%; animation:rf ${dur} linear infinite;`
+            : `background:${c.bg};`;
+        const mkIcon = getIco(curShape);
+        const mk = pct => `<div style="position:absolute; left:${pct}%; top:50%; transform:translate(-50%,-50%); font-size:20px; color:${c.glow}; text-shadow:0 0 ${g} ${c.glow}; z-index:2;">${mkIcon}</div>`;
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `width:100%; font-family:${f};`;
+        wrapper.innerHTML = `<div style="display:flex; justify-content:space-between; color:#fff; font-size:22px; margin-bottom:10px; font-weight:bold; text-shadow:0 0 ${g} ${c.glow};"><span>${txt}</span><span>1500 / 3000</span></div><div class="p-goal-trk"><div class="p-goal-fill" style="${fillStyle} width:50%;"></div>${mk(25)}${mk(50)}${mk(75)}</div>`;
+        stage.appendChild(wrapper);
+    }
+
+    function simAlert(c, f, g, dur) {
+        const ts = themedText(c, dur, g);
+        document.getElementById('preview-stage').innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:${f}; text-align:center; gap:10px;"><div style="font-size:1rem; letter-spacing:4px; text-transform:uppercase; color:#888;">✦ New Follower ✦</div><div style="font-size:3.5rem; font-weight:900;"><span style="${ts}">SilasBlu</span></div></div>`;
+    }
+
+    function simEventList(c, f, g, dur) {
+        const ts        = themedText(c, dur, g);
+        const hasBubble = document.getElementById('eventListBubble').checked;
+        const rows = [['Latest Follower','SilasBlu'],['Latest Sub','DarkWolf'],['Latest Tip','Kai_Butsu — 1,000 tks'],['Top Tipper','BigTipper — 5,000 tks']];
+        const inner = rows.map(([k,v]) => `<div style="font-size:1.1rem; padding:2px 0;"><span style="color:#888;">${k}:&nbsp;</span><span style="${ts}">${v}</span></div>`).join('');
+        const cs    = hasBubble
+            ? `display:flex; flex-direction:column; gap:10px; font-family:${f}; background:rgba(10,10,10,0.88); border:2px solid ${c.glow}; box-shadow:0 0 ${g} ${c.glow}; border-radius:12px; padding:18px;`
+            : `display:flex; flex-direction:column; gap:10px; font-family:${f};`;
+        document.getElementById('preview-stage').innerHTML = `<div style="${cs}">${inner}</div>`;
+    }
+
+    function simTicker(c, f, g, dur) {
+        const speed   = parseInt(dur) * 3;
+        const content = 'SilasBlu (100 tks)\u2002\u2022\u2002DarkWolf (690 tks)\u2002\u2022\u2002Kai_Butsu (1,000 tks)\u2002\u2022\u2002BigTipper (5,000 tks)\u2002\u2022\u2002Tirak_Floof (250 tks)\u2002\u2022\u2002';
+        const ts      = themedText(c, dur, g);
+        document.getElementById('preview-stage').innerHTML = `<div style="width:100%; overflow:hidden; font-family:${f}; font-size:1.4rem; white-space:nowrap;"><span style="display:inline-block; animation:tk ${speed}s linear infinite;"><span style="${ts}">${content}${content}</span></span></div>`;
+    }
+
+    function simTimer(c, f, g) {
+        tSec = 300;
+        const stage = document.getElementById('preview-stage');
+        function render() {
+            const m = Math.floor(tSec / 60), s = tSec % 60;
+            const cc = getC(), gg = document.getElementById('glowSelect').value;
+            const ts = themedText(cc, '8s', gg);
+            stage.innerHTML = `<div style="font-family:${document.getElementById('fontSelect').value}; font-size:3rem; text-align:center; color:#fff;">⏱&nbsp;<span style="${ts}">${m}:${s < 10 ? '0' : ''}${s}</span></div>`;
+            tSec--;
+            if (tSec < 0) tSec = 300;
+        }
+        render(); simInt = setInterval(render, 1000);
+    }
+
+    function simLabel(c, f, g, dur, name, type) {
+        const ts         = themedText(c, dur, g);
+        const showPrefix = document.getElementById('labelPrefix') && document.getElementById('labelPrefix').checked;
+        const prefix     = showPrefix && labelNames[type] ? `<span style="color:#888; font-size:1.2rem; display:block; margin-bottom:4px;">${labelNames[type]}</span>` : '';
+        document.getElementById('preview-stage').innerHTML = `<div style="font-family:${f}; text-align:center; font-weight:900;">${prefix}<span style="${ts} font-size:3rem;">${name.toUpperCase()}</span></div>`;
+    }
+
+    // ─── GEN FUNCTIONS ────────────────────────────────────────────────────────
+
+    function genHeader(f) {
+        let h = f.includes("'") ? `@import url('https://fonts.googleapis.com/css2?family=${f.split("'")[1].replace(/ /g, '+')}&display=swap');\n\n` : '';
+        h += `/* Reset */\nhtml, body, #root { background: transparent !important; }\n\n`;
+        return h;
+    }
+
+    function genKF(c, bStyle, g) {
+        let kf = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
+        if (bStyle === 'pulse')  kf += `@keyframes pulseGlow {0%,100%{box-shadow:0 0 ${g} ${c.glow}} 50%{box-shadow:0 0 20px ${c.glow}}}\n`;
+        if (bStyle === 'plasma') kf += `@keyframes plasmaRotate { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }\n`;
+        return kf;
+    }
+
+    function genChat(c, f, g, dur, op) {
+        const bStyle = document.getElementById('bubbleStyle').value;
+        const toSec  = document.getElementById('timeoutToggle').checked ? timeoutValues[timeoutIndex] : 0;
+        let code = genHeader(f);
+        code += `/* Generated Joystick.TV Styler — Chat Overlay — ${new Date().toLocaleDateString()} */\n`;
+        code += `.chat-message {\n  font-family: ${f}, Impact, 'Arial Black', sans-serif !important;\n  color: ${document.getElementById('chatMsgColor').value} !important;\n  background: rgba(10,10,10,${op}) !important;\n  padding: 12px 18px !important;\n  border-radius: 12px !important;\n  line-height: 1.6 !important;\n`;
+        if (bStyle === 'cyber') {
+            code += `  clip-path: polygon(0% 0%, 95% 0%, 100% 25%, 100% 100%, 8% 100%, 0% 80%) !important;\n  border-left: 5px solid ${c.glow} !important;\n`;
+        } else if (bStyle === 'plasma') {
+            code += `  border: 2px solid transparent !important;\n  background-image: linear-gradient(rgba(10,10,10,${op}), rgba(10,10,10,${op})), ${c.bg} !important;\n  background-origin: border-box !important;\n  background-clip: padding-box, border-box !important;\n  background-size: 200% 200% !important;\n  animation: plasmaRotate 3s linear infinite !important;\n`;
+        } else {
+            code += `  border: 2px solid ${c.isGrad ? 'transparent' : c.glow} !important;\n`;
+            if (c.isGrad) code += `  border-image: ${c.bg} 1 !important;\n`;
+            if (bStyle === 'pulse') code += `  animation: pulseGlow 2s infinite ease-in-out !important;\n`;
+        }
+        code += `  text-shadow: 0 0 ${g} ${c.glow} !important;\n}\n\n`;
+        code += `.username, .username span, a {\n  background: ${c.bg} !important;\n  color: ${document.getElementById('chatUnameColor').value} !important;\n  ${c.isGrad ? 'background-size:200% 100%; animation:rf ' + dur + ' linear infinite;' : ''}\n  padding: 2px 8px !important;\n  border-radius: 6px !important;\n  text-shadow: ${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow} !important;\n}\n`;
+        if (toSec > 0) code += `\n@keyframes mTO { 0%, ${((toSec-0.5)/toSec*100).toFixed(2)}% { opacity:1; } 100% { opacity:0; max-height:0; padding:0; margin:0; } }\n.chat-message { animation: mTO ${toSec}s forwards !important; }\n`;
+        return genKF(c, bStyle, g) + code;
+    }
+
+    function genGoal(c, f, g, dur) {
+        const animCSS = c.isGrad ? `background-size:200% 100%; animation:rf ${dur} linear infinite;` : '';
+        const s = curShape;
+        let code = genHeader(f);
+        code += `/* Generated Joystick.TV Styler — Goal Overlay — ${new Date().toLocaleDateString()} */\n`;
+        code += `.p-goal-trk, [class*="bg-pink-200"], [class*="rounded-full"][class*="w-full"] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; height: 32px !important; border-radius: 16px !important; overflow: hidden !important; position: relative !important; }\n`;
+        code += `.p-goal-fill, [class*="bg-pink-200"] div[style], div[style*="width"][style*="background"] { background: ${c.bg} !important; ${animCSS} height: 100% !important; position: absolute !important; left: 0 !important; top: 0 !important; }\n`;
+        if (s === 'heart' || s === 'star') {
+            const ico = s === 'heart' ? '❤' : '★';
+            code += `.milestone-marker, div[title], [class*="marker"] { position: absolute !important; top: 50% !important; transform: translate(-50%,-50%) !important; font-size: 20px !important; color: ${c.glow} !important; text-shadow: 0 0 ${g} ${c.glow} !important; z-index: 2 !important; background: transparent !important; border: none !important; }\n`;
+            code += `.milestone-marker::before, div[title]::before, [class*="marker"]::before { content: "${ico}"; }\n`;
+        } else {
+            const br  = s === 'circle' ? '50%' : '0';
+            const rot = s === 'diamond' ? 'translate(-50%,-50%) rotate(45deg)' : 'translate(-50%,-50%)';
+            code += `.milestone-marker, div[title], [class*="marker"] { position: absolute !important; top: 50% !important; transform: ${rot} !important; width: 14px !important; height: 14px !important; background: #fff !important; border-radius: ${br} !important; border: 2px solid ${c.glow} !important; z-index: 2 !important; }\n`;
+        }
+        const kf = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
+        return kf + code;
+    }
+
+    function genAlert(c, f, g, dur) {
+        const ts = genTextStyle(c, dur, g);
+        const kf = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
+        let code = genHeader(f);
+        code += `/* Generated Joystick.TV Styler — Alert Overlay — ${new Date().toLocaleDateString()} */\n`;
+        code += `[class*="alert"] { text-align: center !important; }\n`;
+        code += `[class*="alert"] span, [class*="alert"] div { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} }\n`;
+        code += `[class*="alert"] [class*="uppercase"], [class*="alert"] [class*="font-bold"], [class*="alert"] span:first-child { display: block !important; font-size: 1.5rem !important; margin-bottom: 0.5rem !important; text-transform: uppercase !important; letter-spacing: 3px !important; }\n`;
+        code += `[class*="alert"] [class*="text-3xl"], [class*="alert"] [class*="text-5xl"], [class*="alert"] span:last-child { font-size: 3rem !important; font-weight: 900 !important; }\n`;
+        return kf + code;
+    }
+
+    function genEventList(c, f, g, dur) {
+        const ts        = genTextStyle(c, dur, g);
+        const kf        = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
+        const hasBubble = document.getElementById('eventListBubble').checked;
+        let code = genHeader(f);
+        code += `/* Generated Joystick.TV Styler — Event List Overlay — ${new Date().toLocaleDateString()} */\n`;
+        code += hasBubble
+            ? `[class*="event-list"], [class*="session-stats"] { background: rgba(10,10,10,0.88) !important; border: 2px solid ${c.glow} !important; box-shadow: 0 0 ${g} ${c.glow} !important; border-radius: 12px !important; padding: 18px !important; display: flex !important; flex-direction: column !important; gap: 10px !important; }\n`
+            : `[class*="event-list"], [class*="session-stats"] { display: flex !important; flex-direction: column !important; gap: 10px !important; }\n`;
+        code += `[class*="event-item"], [class*="stat-item"] { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} font-size: 1.2rem !important; display: block !important; margin-bottom: 5px !important; }\n`;
+        return kf + code;
+    }
+
+    function genLabel(c, f, g, dur, type) {
+        const typeNames = { label_lt: 'Largest Tipper', label_lf: 'Latest Follower', label_tp: 'Latest Tipper', label_ls: 'Latest Subscriber', label_ct: 'Chat Timer', list_tk: 'Tip Ticker' };
+        const ts = genTextStyle(c, dur, g);
+        const kf = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
+        let code = genHeader(f);
+        code += `/* Generated Joystick.TV Styler — ${typeNames[type] || 'Label'} Overlay — ${new Date().toLocaleDateString()} */\n`;
+        code += `div.scrollable.text-3xl[style], [class*="scrollable"], span[style*="rgb"] { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} background-color: transparent !important; }\n`;
+        return kf + code;
+    }
+
+    // ─── EVENT LISTENERS ──────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSettings();
+
+        document.querySelectorAll('select, input').forEach(el => {
+            el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => {
+                if (el.id === 'bubbleOpacity') {
+                    document.getElementById('opacityValue').textContent = el.value + '%';
+                }
+                if (el.id === 'themeSelect') {
+                    syncCustomThemeUI();
+                    if (el.value === 'custom') {
+                        // Sync glow to the current custom color
+                        const hex = document.getElementById('customThemeColor').value;
+                        document.getElementById('glowColor').value = hex;
+                        flashSwatch(hex);
+                    } else if (colors[el.value]) {
+                        document.getElementById('glowColor').value = colors[el.value].glow;
+                        flashSwatch(colors[el.value].glow);
+                    }
+                }
+                if (el.id === 'customThemeColor') {
+                    // Keep glow in sync with custom theme color
+                    document.getElementById('glowColor').value = el.value;
+                    flashSwatch(el.value);
+                }
+                update();
+            });
+        });
+
+        document.querySelectorAll('.shape-btn').forEach(btn => btn.addEventListener('click', function () {
+            document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active'); curShape = this.dataset.shape; update();
+        }));
+
+        document.getElementById('btnTMinus').addEventListener('click', () => { timeoutIndex = Math.max(0, timeoutIndex - 1); updateTimeoutDisplay(); update(); });
+        document.getElementById('btnTPlus').addEventListener('click', () => { timeoutIndex = Math.min(timeoutValues.length - 1, timeoutIndex + 1); updateTimeoutDisplay(); update(); });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('Reset to defaults?')) { localStorage.removeItem(storageKey); location.reload(); }
+        });
+
+        document.getElementById('copyBtn').addEventListener('click', async () => {
+            const out = document.getElementById('cssOutput'); out.select();
+            try { await navigator.clipboard.writeText(out.value); } catch (e) { document.execCommand('copy'); }
+            document.getElementById('copyBtn').textContent = 'COPIED!';
+            setTimeout(() => document.getElementById('copyBtn').textContent = 'COPY CSS', 2000);
+        });
+
+        glowSwatch.style.background = document.getElementById('glowColor').value;
+        updateTimeoutDisplay();
+        update();
+    });
+</script>
+</body>
+</html>
