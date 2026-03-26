@@ -791,7 +791,7 @@
             if (bStyle === 'pulse') code += `  animation: pulseGlow 2s infinite ease-in-out !important;\n`;
         }
         code += `  text-shadow: 0 0 ${g} ${c.glow} !important;\n}\n\n`;
-        code += `.username, .username span, a {\n  background: ${c.bg} !important;\n  color: ${document.getElementById('chatUnameColor').value} !important;\n  ${c.isGrad ? 'background-size:200% 100%; animation:rf ' + dur + ' linear infinite;' : ''}\n  padding: 2px 8px !important;\n  border-radius: 6px !important;\n  text-shadow: ${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow} !important;\n}\n`;
+        code += `.username, .username span {\n  background: ${c.bg} !important;\n  color: ${document.getElementById('chatUnameColor').value} !important;\n  ${c.isGrad ? 'background-size:200% 100%; animation:rf ' + dur + ' linear infinite;' : ''}\n  padding: 2px 8px !important;\n  border-radius: 6px !important;\n  text-shadow: ${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow} !important;\n}\n`;
         if (toSec > 0) code += `\n@keyframes mTO { 0%, ${((toSec-0.5)/toSec*100).toFixed(2)}% { opacity:1; } 100% { opacity:0; max-height:0; padding:0; margin:0; } }\n.chat-message { animation: mTO ${toSec}s forwards !important; }\n`;
         return genKF(c, bStyle, g) + code;
     }
