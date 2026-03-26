@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Joystick.TV CSS Styler</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Orbitron:wght@400;900&family=Permanent+Marker&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Courier+New&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #121212; --panel: #1e1e1e; --accent: #00d2ff; --text: #e0e0e0; }
         * { box-sizing: border-box; }
@@ -763,7 +762,9 @@
     // ─── GEN FUNCTIONS ────────────────────────────────────────────────────────
 
     function genHeader(f) {
-        let h = f.includes("'") ? `@import url('https://fonts.googleapis.com/css2?family=${f.split("'")[1].replace(/ /g, '+')}&display=swap');\n\n` : '';
+        const systemFonts = ['Courier New', 'Impact', 'Arial Black', 'Arial', 'Georgia', 'Times New Roman', 'Verdana'];
+        const fontName = f.includes("'") ? f.split("'")[1] : null;
+        let h = fontName && !systemFonts.includes(fontName) ? `@import url('https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}&display=swap');\n\n` : '';
         h += `/* Reset */\nhtml, body, #root { background: transparent !important; }\n\n`;
         return h;
     }
