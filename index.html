@@ -821,10 +821,9 @@
         const kf = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — Alert Overlay — ${new Date().toLocaleDateString()} */\n`;
-        code += `[class*="alert"] { text-align: center !important; }\n`;
-        code += `[class*="alert"] span, [class*="alert"] div { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} }\n`;
-        code += `[class*="alert"] [class*="uppercase"], [class*="alert"] [class*="font-bold"], [class*="alert"] span:first-child { display: block !important; font-size: 1.5rem !important; margin-bottom: 0.5rem !important; text-transform: uppercase !important; letter-spacing: 3px !important; }\n`;
-        code += `[class*="alert"] [class*="text-3xl"], [class*="alert"] [class*="text-5xl"], [class*="alert"] span:last-child { font-size: 3rem !important; font-weight: 900 !important; }\n`;
+        code += `span.uppercase.font-bold { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} display: block !important; font-size: 1.5rem !important; margin-bottom: 0.5rem !important; text-transform: uppercase !important; letter-spacing: 3px !important; }\n`;
+        code += `span.font.italic { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} font-size: 3rem !important; font-weight: 900 !important; display: block !important; }\n`;
+        code += `span.line { background-color: ${c.glow} !important; display: block !important; height: 2px !important; }\n`;
         return kf + code;
     }
 
