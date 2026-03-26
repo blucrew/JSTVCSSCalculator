@@ -549,7 +549,7 @@
     function saveSettings() {
         const data = { timeoutIndex, curShape };
         document.querySelectorAll('select, input').forEach(el => {
-            if (el.id) data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+            if (el.id && el.type !== 'file') data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
         });
         localStorage.setItem(storageKey, JSON.stringify(data));
     }
@@ -562,7 +562,7 @@
         curShape = data.curShape || 'circle';
         Object.keys(data).forEach(key => {
             const el = document.getElementById(key);
-            if (el) el[el.type === 'checkbox' ? 'checked' : 'value'] = data[key];
+            if (el && el.type !== 'file') el[el.type === 'checkbox' ? 'checked' : 'value'] = data[key];
         });
         document.getElementById('opacityValue').textContent = (data.bubbleOpacity ?? 95) + '%';
         document.querySelectorAll('.shape-btn').forEach(b => b.classList.toggle('active', b.dataset.shape === curShape));
