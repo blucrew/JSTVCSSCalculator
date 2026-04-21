@@ -207,8 +207,8 @@ div.scrollable.text-3xl[style],
     </div>
 
     <!-- ── MILESTONE ─────────────────────────────────────── -->
-    <h2>Milestone / Goal Bar <span class="badge badge-inferred">Inferred</span></h2>
-    <p style="color:#888; font-size:0.85rem;">Selectors not directly confirmed via live DOM inspection — derived from Gemini analysis and Tailwind class patterns observed across other overlays.</p>
+    <h2>Milestone / Goal Bar <span class="badge badge-confirmed">Confirmed</span></h2>
+    <p style="color:#888; font-size:0.85rem;">Verified against live DOM — silasblu's milestone overlay inspected at 89% progress.</p>
 
     <div class="card">
         <table class="selector-table">
@@ -217,33 +217,43 @@ div.scrollable.text-3xl[style],
             </thead>
             <tbody>
                 <tr>
+                    <td>Milestone text</td>
+                    <td><code>span.text-3xl</code></td>
+                    <td>Has inline <code>style="color: rgb(255,255,255)"</code> set by JS — use <code>!important</code> to override. Sits above the progress bar in the DOM.</td>
+                </tr>
+                <tr>
                     <td>Progress track</td>
-                    <td><code>.bg-pink-200.rounded-full</code><code>[class*="bg-pink-200"]</code></td>
-                    <td>Wildcard selector catches shade variations (e.g. <code>bg-pink-300</code>) if Joystick updates their palette.</td>
+                    <td><code>div.w-full.bg-pink-200.rounded-full</code><code>[class*="bg-pink-200"]</code></td>
+                    <td>Wildcard form catches palette shade variations if Joystick updates (e.g. <code>bg-pink-300</code>). Contains the fill div as a direct child.</td>
                 </tr>
                 <tr>
                     <td>Progress fill</td>
-                    <td><code>[class*="bg-pink-200"] div[style]</code><code>div[style*="width"][style*="background"]</code></td>
-                    <td>Width is set inline by JS (<code>style="width: X%"</code>). Target the child div with an inline style attribute.</td>
-                </tr>
-                <tr>
-                    <td>Milestone text</td>
-                    <td><code>span.text-3xl</code><code>span[style*="color"]</code></td>
-                    <td>Has inline <code>color: rgb(...)</code> — needs <code>!important</code> to override.</td>
+                    <td><code>div.bg-pink-200 > div[style]</code><code>div.text-xs.font-medium.rounded-full[style]</code></td>
+                    <td>Has classes <code>text-xs font-medium text-white text-center p-0.5 leading-none rounded-full</code>. Width and background are both set inline by JS — e.g. <code>style="width: 89%; background: rgb(255,0,0)"</code>. Both need <code>!important</code> to override.</td>
                 </tr>
             </tbody>
         </table>
 
-        <pre><code>/* Goal bar */
+        <pre><code>/* Progress track */
+div.w-full.bg-pink-200.rounded-full,
 [class*="bg-pink-200"] {
   background: rgba(0,0,0,0.7) !important;
   border: 2px solid #00d2ff !important;
   border-radius: 16px !important;
   overflow: hidden !important;
 }
-[class*="bg-pink-200"] div[style] {
+
+/* Progress fill — override JS-injected width and background */
+div.bg-pink-200 > div[style],
+div.text-xs.font-medium.rounded-full[style] {
   background: linear-gradient(90deg, #00d2ff, #00ff99) !important;
   height: 100% !important;
+}
+
+/* Milestone label text */
+span.text-3xl {
+  color: #ffffff !important;
+  font-family: 'Your Font', sans-serif !important;
 }</code></pre>
     </div>
 
