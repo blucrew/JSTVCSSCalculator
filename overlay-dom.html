@@ -150,8 +150,8 @@ html, body, #root { background: transparent !important; }</code></pre>
                 </tr>
                 <tr>
                     <td>Header text<br><em>(NEW FOLLOWER etc.)</em></td>
-                    <td><code>span.uppercase.font-bold</code><code>[class*="alert"] span:first-child</code></td>
-                    <td>Font size ~1.5rem. Apply <code>text-transform: uppercase; letter-spacing: 3px</code>.</td>
+                    <td><code>span.uppercase.font-bold</code> <span class="badge badge-inferred">Inferred</span><br><code>[class*="alert"] span:first-child</code></td>
+                    <td>Font size ~1.5rem. Apply <code>text-transform: uppercase; letter-spacing: 3px</code>. Class names corroborated by Gemini — not directly confirmed via live DOM inspector.</td>
                 </tr>
                 <tr>
                     <td>Separator line</td>
@@ -160,8 +160,8 @@ html, body, #root { background: transparent !important; }</code></pre>
                 </tr>
                 <tr>
                     <td>Username</td>
-                    <td><code>span.font.italic</code><code>[class*="alert"] [class*="text-3xl"]</code><code>[class*="alert"] [class*="text-5xl"]</code></td>
-                    <td>Font size ~3rem. Joystick uses <code>text-3xl</code> or <code>text-5xl</code> Tailwind classes depending on name length.</td>
+                    <td><code>span.font.italic</code> <span class="badge badge-inferred">Inferred</span><br><code>[class*="alert"] [class*="text-3xl"]</code><br><code>[class*="alert"] [class*="text-5xl"]</code></td>
+                    <td>Font size ~3rem. <code>span.font.italic</code> was Gemini-corroborated. Tailwind size classes <code>text-3xl</code>/<code>text-5xl</code> confirmed from live DOM.</td>
                 </tr>
             </tbody>
         </table>
@@ -207,7 +207,8 @@ div.scrollable.text-3xl[style],
     </div>
 
     <!-- ── MILESTONE ─────────────────────────────────────── -->
-    <h2>Milestone / Goal Bar <span class="badge badge-confirmed">Confirmed</span></h2>
+    <h2>Milestone / Goal Bar <span class="badge badge-inferred">Inferred</span></h2>
+    <p style="color:#888; font-size:0.85rem;">Selectors not directly confirmed via live DOM inspection — derived from Gemini analysis and Tailwind class patterns observed across other overlays.</p>
 
     <div class="card">
         <table class="selector-table">
