@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joystick.TV Overlay DOM Reference</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #121212; --panel: #1e1e1e; --accent: #00d2ff; --text: #e0e0e0; --green: #00ff99; --yellow: #ffd700; --red: #ff4444; }
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #121212; }
+        ::-webkit-scrollbar-thumb { background: #0affff; border-radius: 4px; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+        header { background: var(--panel); border-bottom: 1px solid #333; padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        header h1 { margin: 0; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
+        header a { color: var(--accent); text-decoration: none; font-size: 0.85rem; border: 1px solid var(--accent); padding: 6px 14px; border-radius: 4px; transition: 0.2s; }
+        header a:hover { background: var(--accent); color: #000; }
+
+        .container { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+
+        h2 { font-family: 'Orbitron', sans-serif; color: var(--accent); font-size: 1rem; text-transform: uppercase; letter-spacing: 2px; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #333; }
+        h3 { color: #fff; font-size: 0.95rem; margin: 24px 0 8px; }
+        p { color: #bbb; margin: 0 0 12px; font-size: 0.9rem; }
+
+        .card { background: var(--panel); border: 1px solid #333; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; }
+        .card:last-child { margin-bottom: 0; }
+
+        .badge { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; text-transform: uppercase; letter-spacing: 1px; }
+        .badge-confirmed { background: rgba(0,255,153,0.15); color: var(--green); border: 1px solid rgba(0,255,153,0.3); }
+        .badge-inferred { background: rgba(255,215,0,0.12); color: var(--yellow); border: 1px solid rgba(255,215,0,0.25); }
+
+        code { font-family: 'Courier New', monospace; font-size: 0.82rem; background: rgba(0,210,255,0.08); color: var(--accent); padding: 2px 6px; border-radius: 3px; }
+
+        .selector-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.85rem; }
+        .selector-table th { text-align: left; color: #666; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 6px 12px; border-bottom: 1px solid #2a2a2a; }
+        .selector-table td { padding: 10px 12px; border-bottom: 1px solid #1a1a1a; vertical-align: top; }
+        .selector-table tr:last-child td { border-bottom: none; }
+        .selector-table td:first-child { width: 45%; }
+        .selector-table td code { display: block; margin-bottom: 4px; }
+
+        .callout { background: rgba(0,210,255,0.05); border-left: 3px solid var(--accent); border-radius: 4px; padding: 12px 16px; margin: 16px 0; font-size: 0.85rem; color: #bbb; }
+        .callout strong { color: var(--accent); }
+
+        .warn { background: rgba(255,215,0,0.05); border-left: 3px solid var(--yellow); border-radius: 4px; padding: 12px 16px; margin: 16px 0; font-size: 0.85rem; color: #bbb; }
+        .warn strong { color: var(--yellow); }
+
+        pre { background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; overflow-x: auto; margin: 12px 0; }
+        pre code { background: none; padding: 0; color: #0f0; font-size: 0.8rem; }
+
+        .legend { display: flex; gap: 16px; margin-bottom: 24px; font-size: 0.8rem; }
+        .legend span { display: flex; align-items: center; gap: 6px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Overlay DOM Reference</h1>
+    <a href="css.html">← Back to CSS Styler</a>
+</header>
+
+<div class="container">
+
+    <p style="color:#888; font-size:0.85rem; margin-top:0;">Joystick.TV OBS overlay structure — documented from live DOM inspection. Use this as a reference when writing custom CSS beyond what the Styler tool generates.</p>
+
+    <div class="legend">
+        <span><span class="badge badge-confirmed">Confirmed</span> Verified against live DOM</span>
+        <span><span class="badge badge-inferred">Inferred</span> Best-guess / Gemini-corroborated</span>
+    </div>
+
+    <!-- ── GENERAL ───────────────────────────────────────── -->
+    <h2>General</h2>
+
+    <div class="card">
+        <h3>Root Element</h3>
+        <p>All overlays are Single Page Applications rendered into <code>#root</code>. The commonly assumed <code>#application</code> does not exist.</p>
+        <pre><code>/* Always start with this reset */
+html, body, #root { background: transparent !important; }</code></pre>
+        <div class="callout"><strong>OBS note:</strong> Without this reset, the browser source renders a solid black or dark-grey box instead of a transparent overlay.</div>
+    </div>
+
+    <div class="card">
+        <h3>Inline Styles</h3>
+        <p>Joystick's JavaScript injects <code>style="color: rgb(...)"</code> and <code>style="width: X%"</code> directly onto elements. Standard CSS rules lose to inline styles — always use <code>!important</code>.</p>
+        <div class="warn"><strong>Specificity tip:</strong> For stubborn inline styles, use attribute selectors like <code>div.scrollable.text-3xl[style]</code> to maximise specificity.</div>
+    </div>
+
+    <!-- ── CHAT ─────────────────────────────────────────── -->
+    <h2>Chat Overlay <span class="badge badge-confirmed">Confirmed</span></h2>
+
+    <div class="card">
+        <table class="selector-table">
+            <thead>
+                <tr><th>Element</th><th>Selector</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Message container</td>
+                    <td><code>.chat-message</code></td>
+                    <td>Wrap background, border, padding here. Add <code>position: relative; z-index: 1; overflow: visible</code> to prevent Joystick's entry animation pushing it behind other elements.</td>
+                </tr>
+                <tr>
+                    <td>Username badge</td>
+                    <td><code>.username</code><code>.username span</code></td>
+                    <td>Use <code>display: inline-block !important</code> to prevent collapsing in flex context. Background gradients and colours go here.</td>
+                </tr>
+                <tr>
+                    <td>Message text</td>
+                    <td><code>.content</code></td>
+                    <td>Font and text colour for the message body.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <pre><code>/* Example: basic chat styling */
+.chat-message {
+  background: rgba(10,10,10,0.9) !important;
+  border: 2px solid #00d2ff !important;
+  border-radius: 12px !important;
+  padding: 12px 18px !important;
+  position: relative !important;
+  z-index: 1 !important;
+  overflow: visible !important;
+}
+.username, .username span {
+  display: inline-block !important;
+  background: #00d2ff !important;
+  color: #000 !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+}</code></pre>
+    </div>
+
+    <!-- ── ALERTS ────────────────────────────────────────── -->
+    <h2>Alert Overlay <span class="badge badge-confirmed">Confirmed</span></h2>
+    <p style="color:#888; font-size:0.85rem;">Pop-up alerts for new followers, tips, and subscriptions.</p>
+
+    <div class="card">
+        <table class="selector-table">
+            <thead>
+                <tr><th>Element</th><th>Selector</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Alert container</td>
+                    <td><code>[class*="alert"]</code><code>div.m-auto.text-center</code></td>
+                    <td>Use <code>display: flex; flex-direction: column; align-items: center</code> to ensure two-line stacked layout.</td>
+                </tr>
+                <tr>
+                    <td>Header text<br><em>(NEW FOLLOWER etc.)</em></td>
+                    <td><code>span.uppercase.font-bold</code><code>[class*="alert"] span:first-child</code></td>
+                    <td>Font size ~1.5rem. Apply <code>text-transform: uppercase; letter-spacing: 3px</code>.</td>
+                </tr>
+                <tr>
+                    <td>Separator line</td>
+                    <td><code>span.uppercase.font-bold::after</code></td>
+                    <td>The DOM has no separator element — inject one via <code>::after</code> pseudo-element. See example below.</td>
+                </tr>
+                <tr>
+                    <td>Username</td>
+                    <td><code>span.font.italic</code><code>[class*="alert"] [class*="text-3xl"]</code><code>[class*="alert"] [class*="text-5xl"]</code></td>
+                    <td>Font size ~3rem. Joystick uses <code>text-3xl</code> or <code>text-5xl</code> Tailwind classes depending on name length.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <pre><code>/* Injecting a separator line — no DOM element needed */
+span.uppercase.font-bold::after,
+[class*="alert"] span:first-child::after {
+  content: '' !important;
+  display: block !important;
+  height: 2px !important;
+  width: 80% !important;
+  margin: 8px auto 0 !important;
+  background: #00d2ff !important;
+  box-shadow: 0 0 10px #00d2ff !important;
+}</code></pre>
+    </div>
+
+    <!-- ── LABELS ────────────────────────────────────────── -->
+    <h2>Latest Follower / Latest Tipper Labels <span class="badge badge-confirmed">Confirmed</span></h2>
+
+    <div class="card">
+        <table class="selector-table">
+            <thead>
+                <tr><th>Element</th><th>Selector</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Text element</td>
+                    <td><code>div.w-full.h-full.scrollable.text-3xl</code><code>[class*="scrollable"]</code></td>
+                    <td>Has inline <code>background-color</code> set by JS — must override with <code>background-color: transparent !important</code>.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <pre><code>/* Latest follower / tipper label */
+div.scrollable.text-3xl[style],
+[class*="scrollable"] {
+  font-family: 'Your Font', sans-serif !important;
+  color: #ffffff !important;
+  background-color: transparent !important;
+  text-align: center !important;
+}</code></pre>
+    </div>
+
+    <!-- ── MILESTONE ─────────────────────────────────────── -->
+    <h2>Milestone / Goal Bar <span class="badge badge-confirmed">Confirmed</span></h2>
+
+    <div class="card">
+        <table class="selector-table">
+            <thead>
+                <tr><th>Element</th><th>Selector</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Progress track</td>
+                    <td><code>.bg-pink-200.rounded-full</code><code>[class*="bg-pink-200"]</code></td>
+                    <td>Wildcard selector catches shade variations (e.g. <code>bg-pink-300</code>) if Joystick updates their palette.</td>
+                </tr>
+                <tr>
+                    <td>Progress fill</td>
+                    <td><code>[class*="bg-pink-200"] div[style]</code><code>div[style*="width"][style*="background"]</code></td>
+                    <td>Width is set inline by JS (<code>style="width: X%"</code>). Target the child div with an inline style attribute.</td>
+                </tr>
+                <tr>
+                    <td>Milestone text</td>
+                    <td><code>span.text-3xl</code><code>span[style*="color"]</code></td>
+                    <td>Has inline <code>color: rgb(...)</code> — needs <code>!important</code> to override.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <pre><code>/* Goal bar */
+[class*="bg-pink-200"] {
+  background: rgba(0,0,0,0.7) !important;
+  border: 2px solid #00d2ff !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+[class*="bg-pink-200"] div[style] {
+  background: linear-gradient(90deg, #00d2ff, #00ff99) !important;
+  height: 100% !important;
+}</code></pre>
+    </div>
+
+    <!-- ── FONTS ─────────────────────────────────────────── -->
+    <h2>Custom Fonts</h2>
+
+    <div class="card">
+        <h3>Google Fonts via @import</h3>
+        <p>Works in OBS's embedded Chromium. Occasional flicker on first load while the SPA initialises. Always include a system font fallback.</p>
+        <pre><code>@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap');
+
+/* font-family stack: web font → bold system fallback → generic */
+font-family: 'Permanent Marker', Impact, 'Arial Black', sans-serif !important;</code></pre>
+
+        <h3>Local Font via @font-face</h3>
+        <p>More reliable if the Google Fonts import occasionally fails. Font must be installed on the machine running OBS.</p>
+        <pre><code>@font-face {
+  font-family: 'Permanent Marker';
+  src: url('C:/Windows/Fonts/PermanentMarker-Regular.ttf');
+}</code></pre>
+        <div class="warn"><strong>Note:</strong> Courier New is a system font — do not attempt to load it from Google Fonts, it will be blocked by CORB.</div>
+    </div>
+
+</div>
+</body>
+</html>
