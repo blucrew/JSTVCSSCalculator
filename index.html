@@ -29,6 +29,14 @@
         .btn-reset { background: #444; color: #fff; border: 1px solid #666; }
         .btn-reset:hover { background: #555; }
         textarea { width: 100%; height: 150px; background: #000; border: 1px solid #333; color: #0f0; font-family: monospace; padding: 10px; font-size: 10px; margin-top: 0; resize: vertical; }
+        .jt-guide { background: rgba(0,210,255,0.05); border: 1px solid rgba(0,210,255,0.2); border-radius: 6px; padding: 12px 14px; font-size: 0.82rem; line-height: 1.8; }
+        .jt-guide-header { font-weight: 700; color: var(--accent); margin-bottom: 8px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center; }
+        .jt-guide-header a { color: var(--accent); text-decoration: none; font-size: 0.78rem; }
+        .jt-guide-header a:hover { text-decoration: underline; }
+        .jt-row { display: flex; justify-content: space-between; padding: 1px 0; }
+        .jt-row span:first-child { color: #888; }
+        .jt-row span:last-child { color: #fff; font-weight: 600; }
+        .output-label { font-size: 0.72rem; color: #666; text-transform: uppercase; letter-spacing: 1px; }
 
         /* ── Preview area ───────────────────────────────── */
         .preview-container { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; background-image: linear-gradient(45deg, #111 25%, transparent 25%), linear-gradient(-45deg, #111 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #111 75%), linear-gradient(-45deg, transparent 75%, #111 75%); background-size: 20px 20px; }
@@ -118,11 +126,11 @@
 
         <div class="instructions">
             <strong>How to use:</strong><br>
-            1. Select a "Vanilla" scene in <a href="https://joystick.tv/scenes" target="_blank">Joystick.TV Scenes</a>.<br>
+            1. Select a "Vanilla" scene in <a href="https://joystick.tv/scenes" target="_blank" rel="noopener noreferrer">Joystick.TV Scenes</a>.<br>
             2. Pick your overlay type &amp; customize.<br>
             3. Copy the CSS.<br>
             4. In OBS: Properties → Custom CSS → Paste → Refresh cache.<br><br>
-            <a href="overlay-dom.html" target="_blank">📖 Overlay DOM Reference &amp; Advanced CSS Docs</a>
+            <a href="overlay-dom.html" target="_blank" rel="noopener">📖 Overlay DOM Reference &amp; Advanced CSS Docs</a>
         </div>
 
         <!-- ── Preview Background ──────────────────────── -->
@@ -353,6 +361,42 @@
             </div>
         </div>
 
+        <!-- ── Joystick Native Settings (all overlay types) ── -->
+        <div id="groupJoystick" class="group hidden">
+            <div id="jtAnimRow" style="margin-bottom:10px;">
+                <label>Joystick Animation</label>
+                <select id="jtAnimation">
+                    <option value="none">None / Default</option>
+                    <option value="bounce">Bounce and Scale</option>
+                    <option value="spin">Spin and Flip</option>
+                    <option value="typewriter">Typewriter</option>
+                    <option value="glitch">Glitch</option>
+                    <option value="ltr" selected>Left to Right</option>
+                    <option value="rtl">Right to Left</option>
+                    <option value="ttb">Top to Bottom</option>
+                    <option value="btt">Bottom to Top</option>
+                </select>
+            </div>
+            <label>Font Size</label>
+            <select id="jtFontSize">
+                <option value="">Default</option>
+                <option value="Base">Base</option>
+                <option value="2XL">2XL</option>
+                <option value="3XL" selected>3XL</option>
+                <option value="4XL">4XL</option>
+                <option value="6XL">6XL</option>
+                <option value="8XL">8XL</option>
+            </select>
+            <div class="toggle-row" style="margin-top:10px;" id="jtShadowRow">
+                <label class="switch" style="margin:0; flex-shrink:0;">
+                    <input type="checkbox" id="jtShadow" checked>
+                    <span class="slider"></span>
+                </label>
+                <label for="jtShadow">Text Shadow</label>
+                <input type="color" id="jtShadowColor" value="#22ffc2" style="margin-left:auto; width:36px; height:28px; padding:2px; border-radius:4px; border:1px solid #444; cursor:pointer; background:#000;">
+            </div>
+        </div>
+
         <!-- ── 14. Message Timeout (chat only) ─────────── -->
         <div class="group" id="groupTimeout">
             <label>Message Timeout (Fade Out)</label>
@@ -371,6 +415,14 @@
     </div>
 
     <div class="sidebar-footer">
+        <div id="jtGuide" class="jt-guide hidden">
+            <div class="jt-guide-header">
+                <span>⚙ Set in Joystick</span>
+                <a href="https://joystick.tv/stream-overlays" target="_blank" rel="noopener noreferrer">Open Settings ↗</a>
+            </div>
+            <div id="jtGuideContent"></div>
+        </div>
+        <div class="output-label">OBS Custom CSS</div>
         <button class="btn-copy" id="copyBtn">COPY CSS</button>
         <button class="btn-reset" id="resetBtn">Reset to Defaults</button>
         <textarea id="cssOutput" readonly></textarea>
@@ -386,7 +438,10 @@
     let simInt  = null;
     let curShape = 'circle';
     let tSec    = 300;
-    const storageKey = 'jtv_styler_settings';
+    const storageKey  = 'jtv_styler_settings';
+    const LABEL_TYPES = ['label_lt', 'label_lf', 'label_tp', 'label_ls'];
+    const KF_RF       = `@keyframes rf{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n`;
+    const ICO_MAP     = { circle: '●', square: '■', diamond: '◆', heart: '❤', star: '★' };
 
     const souls        = ['Nightdragon', 'Silas_Blu', 'DarkWolf', 'Bounty_V', 'Tirak_Floof'];
     const chatMessages = ['This overlay looks sick!', 'hello world', 'Can you play a different game?', 'LMAO nice try', 'GG WP!'];
@@ -558,7 +613,8 @@
     function loadSettings() {
         const saved = localStorage.getItem(storageKey);
         if (!saved) return;
-        const data = JSON.parse(saved);
+        let data;
+        try { data = JSON.parse(saved); } catch (_) { localStorage.removeItem(storageKey); return; }
         timeoutIndex = data.timeoutIndex ?? 2;
         curShape = data.curShape || 'circle';
         Object.keys(data).forEach(key => {
@@ -584,29 +640,24 @@
     };
 
     const getOut = (w) => w === '1' ? '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, ' : (w === '2' ? '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, ' : '');
-    const getIco = (s) => ({ circle: '●', square: '■', diamond: '◆', heart: '❤', star: '★' }[s] || '●');
+    const getIco = (s) => ICO_MAP[s] || '●';
 
-    function themedText(c, dur, g) {
+    /* imp=false → preview inline styles (no !important, adds display:inline-block)
+       imp=true  → generated OBS CSS (!important on every property, no display:inline-block) */
+    function themedText(c, dur, g, imp = false) {
+        const x    = imp ? ' !important' : '';
+        const disp = imp ? '' : ' display:inline-block;';
         if (c.isGrad) {
-            return `background:${c.bg}; background-size:200% 100%; animation:rf ${dur} linear infinite; -webkit-background-clip:text; -webkit-text-fill-color:transparent; display:inline-block;`;
+            return `background:${c.bg}${x}; background-size:200% 100%${x}; animation:rf ${dur} linear infinite${x}; -webkit-background-clip:text${x}; -webkit-text-fill-color:transparent${x};${disp}`;
         } else if (c.bg.includes('gradient')) {
-            return `background:${c.bg}; -webkit-background-clip:text; -webkit-text-fill-color:transparent; display:inline-block;`;
+            return `background:${c.bg}${x}; -webkit-background-clip:text${x}; -webkit-text-fill-color:transparent${x};${disp}`;
         } else {
             const textCol = c.bg === '#222222' ? '#ffffff' : c.bg;
-            return `color:${textCol}; text-shadow:0 0 ${g} ${c.glow};`;
+            return `color:${textCol}${x}; text-shadow:0 0 ${g} ${c.glow}${x};`;
         }
     }
 
-    function genTextStyle(c, dur, g) {
-        if (c.isGrad) {
-            return `background: ${c.bg} !important; background-size: 200% 100% !important; animation: rf ${dur} linear infinite !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;`;
-        } else if (c.bg.includes('gradient')) {
-            return `background: ${c.bg} !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;`;
-        } else {
-            const textCol = c.bg === '#222222' ? '#ffffff' : c.bg;
-            return `color: ${textCol} !important; text-shadow: 0 0 ${g} ${c.glow} !important;`;
-        }
-    }
+    const genTextStyle = (c, dur, g) => themedText(c, dur, g, true);
 
     function updateTimeoutDisplay() {
         const val = timeoutValues[timeoutIndex];
@@ -623,7 +674,8 @@
         const f    = document.getElementById('fontSelect').value;
         const g    = document.getElementById('glowSelect').value;
         const op   = document.getElementById('bubbleOpacity').value / 100;
-        const dur  = document.getElementById('animSpeed').value === 'slow' ? '12s' : (document.getElementById('animSpeed').value === 'fast' ? '4s' : '8s');
+        const spd  = document.getElementById('animSpeed').value;
+        const dur  = spd === 'slow' ? '12s' : spd === 'fast' ? '4s' : '8s';
 
         let dynStyle = document.getElementById('dynKeyframes');
         if (!dynStyle) { dynStyle = document.createElement('style'); dynStyle.id = 'dynKeyframes'; document.head.appendChild(dynStyle); }
@@ -638,7 +690,7 @@
 
         const isChat  = type === 'chat';
         const isGoal  = type.startsWith('goal');
-        const isLabel = ['label_lt', 'label_lf', 'label_tp', 'label_ls'].includes(type);
+        const isLabel = LABEL_TYPES.includes(type);
 
         document.getElementById('groupBubble').classList.toggle('hidden', !isChat);
         document.getElementById('groupOpacity').classList.toggle('hidden', !isChat);
@@ -649,6 +701,12 @@
         document.getElementById('groupGoal').classList.toggle('hidden', !isGoal);
         document.getElementById('groupLabelPrefix').classList.toggle('hidden', !isLabel);
         document.getElementById('groupEventBubble').classList.toggle('hidden', type !== 'list_ev');
+        document.getElementById('groupJoystick').classList.remove('hidden');
+        const hasAnim = type === 'alert' || type === 'chat';
+        document.getElementById('jtAnimRow').classList.toggle('hidden', !hasAnim);
+        const hasShadow = type === 'alert' || LABEL_TYPES.includes(type);
+        document.getElementById('jtShadowRow').classList.toggle('hidden', !hasShadow);
+        genJoystickGuide(type);
 
         stage.style.justifyContent = (isChat || isGoal) ? 'flex-end' : 'center';
 
@@ -668,7 +726,7 @@
             simTicker(c, f, g, dur);
             document.getElementById('cssOutput').value = genLabel(c, f, g, dur, 'list_tk');
         } else if (type === 'label_ct') {
-            simTimer(c, f, g);
+            simTimer();
             document.getElementById('cssOutput').value = genLabel(c, f, g, dur, 'label_ct');
         } else {
             simLabel(c, f, g, dur, labelExamples[type] || 'Username', type);
@@ -682,7 +740,7 @@
 
     function simChat(c, f, g, dur, op) {
         const stage  = document.getElementById('preview-stage');
-        const to     = document.getElementById('timeoutToggle').checked ? timeoutValues[timeoutIndex] * 1000 : 'none';
+        const to     = document.getElementById('timeoutToggle').checked ? timeoutValues[timeoutIndex] * 1000 : null;
         const bStyle = document.getElementById('bubbleStyle').value;
         const add = () => {
             const m = document.createElement('div');
@@ -698,7 +756,7 @@
             }
             m.innerHTML = `<span class="p-uname" style="background:${c.bg}; color:${document.getElementById('chatUnameColor').value}; ${c.isGrad ? 'background-size:200% 100%; animation:rf '+dur+' linear infinite;' : ''} text-shadow:${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow};">${souls[Math.floor(Math.random()*souls.length)]}</span> : <span style="color:${document.getElementById('chatMsgColor').value}">${chatMessages[Math.floor(Math.random()*chatMessages.length)]}</span>`;
             stage.appendChild(m);
-            if (to !== 'none') setTimeout(() => { m.style.opacity = '0'; setTimeout(() => m.remove(), 500); }, to);
+            if (to !== null) setTimeout(() => { m.style.opacity = '0'; setTimeout(() => m.remove(), 500); }, to);
             if (stage.children.length > 8) stage.firstChild.remove();
         };
         add(); simInt = setInterval(add, 3000);
@@ -717,9 +775,42 @@
         stage.appendChild(wrapper);
     }
 
+    const jtAnimKF = `
+        @keyframes jtBounce { 0%{transform:scale(0);opacity:0} 60%{transform:scale(1.15);opacity:1} 80%{transform:scale(0.95)} 100%{transform:scale(1);opacity:1} }
+        @keyframes jtSpin   { 0%{transform:rotateY(90deg);opacity:0} 100%{transform:rotateY(0deg);opacity:1} }
+        @keyframes jtType   { from{opacity:0;clip-path:inset(0 100% 0 0)} to{opacity:1;clip-path:inset(0 0% 0 0)} }
+        @keyframes jtGlitch { 0%,100%{transform:translate(0)} 20%{transform:translate(-4px,3px)} 40%{transform:translate(4px,-3px)} 60%{transform:translate(-3px,-4px)} 80%{transform:translate(3px,4px)} }
+        @keyframes jtLTR    { from{transform:translateX(-80px);opacity:0} to{transform:translateX(0);opacity:1} }
+        @keyframes jtRTL    { from{transform:translateX(80px);opacity:0} to{transform:translateX(0);opacity:1} }
+        @keyframes jtTTB    { from{transform:translateY(-60px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes jtBTT    { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+    `;
+    const jtAnimMap = {
+        bounce: 'jtBounce 0.6s ease-out forwards',
+        spin:   'jtSpin 0.7s ease-out forwards',
+        typewriter: 'jtType 0.8s steps(20,end) forwards',
+        glitch: 'jtGlitch 0.5s ease forwards',
+        ltr:    'jtLTR 0.5s ease-out forwards',
+        rtl:    'jtRTL 0.5s ease-out forwards',
+        ttb:    'jtTTB 0.5s ease-out forwards',
+        btt:    'jtBTT 0.5s ease-out forwards',
+        none:   ''
+    };
+
+    function getOrCreateStyle(id) {
+        let s = document.getElementById(id);
+        if (!s) { s = document.createElement('style'); s.id = id; document.head.appendChild(s); }
+        return s;
+    }
+
     function simAlert(c, f, g, dur) {
-        const ts = themedText(c, dur, g);
-        document.getElementById('preview-stage').innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:${f}; text-align:center; gap:14px; width:100%;"><span class="uppercase font-bold" style="font-size:1.5rem; letter-spacing:3px; text-transform:uppercase; display:block; ${ts}">NEW FOLLOWER</span><span class="line" style="display:block; height:2px; width:80%; background-color:${c.glow}; box-shadow:0 0 ${g} ${c.glow};"></span><span class="font italic" style="font-size:3rem; font-weight:900; display:block; ${ts}">SilasBlu</span></div>`;
+        const ts   = themedText(c, dur, g);
+        const anim = document.getElementById('jtAnimation')?.value || 'none';
+        getOrCreateStyle('previewAnimKF').textContent = jtAnimKF;
+        const animStyle = jtAnimMap[anim] ? `animation:${jtAnimMap[anim]};` : '';
+        document.getElementById('preview-stage').innerHTML =
+            `<div style="display:flex;align-items:center;justify-content:center;width:100%;text-align:center;">` +
+            `<div style="font-family:${f};font-size:3rem;font-weight:900;${ts}${animStyle}">New Follower SilasBlu</div></div>`;
     }
 
     function simEventList(c, f, g, dur) {
@@ -734,13 +825,13 @@
     }
 
     function simTicker(c, f, g, dur) {
-        const speed   = parseInt(dur) * 3;
+        const speed   = parseInt(dur, 10) * 3;
         const content = 'SilasBlu (100 tks)\u2002\u2022\u2002DarkWolf (690 tks)\u2002\u2022\u2002Kai_Butsu (1,000 tks)\u2002\u2022\u2002BigTipper (5,000 tks)\u2002\u2022\u2002Tirak_Floof (250 tks)\u2002\u2022\u2002';
         const ts      = themedText(c, dur, g);
         document.getElementById('preview-stage').innerHTML = `<div style="width:100%; overflow:hidden; font-family:${f}; font-size:1.4rem; white-space:nowrap;"><span style="display:inline-block; animation:tk ${speed}s linear infinite;"><span style="${ts}">${content}${content}</span></span></div>`;
     }
 
-    function simTimer(c, f, g) {
+    function simTimer() {
         tSec = 300;
         const stage = document.getElementById('preview-stage');
         function render() {
@@ -761,18 +852,113 @@
         document.getElementById('preview-stage').innerHTML = `<div style="font-family:${f}; text-align:center; font-weight:900;">${prefix}<span style="${ts} font-size:3rem;">${name.toUpperCase()}</span></div>`;
     }
 
+    // ─── JOYSTICK GUIDE ───────────────────────────────────────────────────────
+
+    function genJoystickGuide(type) {
+        const guide   = document.getElementById('jtGuide');
+        const content = document.getElementById('jtGuideContent');
+        guide.classList.remove('hidden');
+
+        const animEl   = document.getElementById('jtAnimation');
+        const sizeEl   = document.getElementById('jtFontSize');
+        const shadow   = document.getElementById('jtShadow').checked;
+        const shadowC  = document.getElementById('jtShadowColor').value;
+        const animName = animEl.options[animEl.selectedIndex].text;
+        const sizeName = sizeEl.value || 'Default';
+        const shadowSwatch = `<span style="display:inline-block;width:10px;height:10px;background:${shadowC};border-radius:2px;vertical-align:middle;margin-right:4px;"></span>${shadowC}`;
+        const shadowRows = shadow ? [['Shadow Color', shadowSwatch]] : [];
+
+        let rows;
+
+        if (type === 'alert') {
+            rows = [
+                ['Animation',          animName],
+                ['Font Size',          sizeName],
+                ['Text Color',         'Set via Theme Color ↓'],
+                ['Background Color',   'Optional — or leave transparent'],
+                ['Background Opacity', 'Optional'],
+                ['Text Shadow',        shadow ? 'On' : 'Off'],
+                ...shadowRows,
+            ];
+        } else if (type === 'chat') {
+            rows = [
+                ['Animation',    animName],
+                ['Font Size',    sizeName],
+                ['Message Color','Set via Message Text Color ↓'],
+                ['Outline',      'Optional — toggle in Joystick'],
+            ];
+        } else if (type === 'goal_tip' || type === 'goal_ms') {
+            rows = [
+                ['Font Size',            sizeName],
+                ['Title Color',          'Set via Theme Color ↓'],
+                ['Goal Background Color','Optional'],
+                ['Goal Progress Color',  'Set via Theme Color ↓'],
+                ['Goal Border Color',    'Optional'],
+            ];
+        } else if (type === 'list_ev') {
+            rows = [
+                ['Max Events',         'Set in Joystick overlay settings'],
+                ['Font Size',          sizeName],
+                ['Text Color',         'Set via Theme Color ↓'],
+                ['Background Color',   'Optional'],
+                ['Background Opacity', 'Optional'],
+            ];
+        } else if (type === 'list_tk') {
+            rows = [
+                ['Font Size',          sizeName],
+                ['Text Color',         'Set via Theme Color ↓'],
+                ['Background Color',   'Optional'],
+                ['Background Opacity', 'Optional'],
+                ['Ticker Speed',       'Set in Joystick overlay settings'],
+                ['Max Tips',           'Set in Joystick overlay settings'],
+            ];
+        } else if (type === 'label_lt') {
+            rows = [
+                ['Font Size',          sizeName],
+                ['Text Color',         'Set via Theme Color ↓'],
+                ['Background Color',   'Optional'],
+                ['Background Opacity', 'Optional'],
+                ['Text Shadow',        shadow ? 'On' : 'Off'],
+                ...shadowRows,
+                ['Time Period',        'Set in Joystick overlay settings'],
+            ];
+        } else if (type === 'label_lf' || type === 'label_tp' || type === 'label_ls') {
+            rows = [
+                ['Font Size',          sizeName],
+                ['Text Color',         'Set via Theme Color ↓'],
+                ['Background Color',   'Optional'],
+                ['Background Opacity', 'Optional'],
+                ['Text Shadow',        shadow ? 'On' : 'Off'],
+                ...shadowRows,
+            ];
+        } else if (type === 'label_ct') {
+            rows = [
+                ['Font Size',          sizeName],
+                ['Text Color',         'Set via Theme Color ↓'],
+                ['Background Color',   'Optional'],
+                ['Background Opacity', 'Optional'],
+            ];
+        } else {
+            rows = [['Font Size', sizeName]];
+        }
+
+        content.innerHTML = rows.map(([k, v]) =>
+            `<div class="jt-row"><span>${k}</span><span>${v}</span></div>`
+        ).join('');
+    }
+
     // ─── GEN FUNCTIONS ────────────────────────────────────────────────────────
 
     function genHeader(f) {
         const systemFonts = ['Courier New', 'Impact', 'Arial Black', 'Arial', 'Georgia', 'Times New Roman', 'Verdana'];
         const fontName = f.includes("'") ? f.split("'")[1] : null;
         let h = fontName && !systemFonts.includes(fontName) ? `@import url('https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}&display=swap');\n\n` : '';
-        h += `/* Reset */\nhtml, body, #root { background: transparent !important; }\n\n`;
+        h += `/* Reset */\nhtml, body, body.layout-overlay { background: transparent !important; }\n\n`;
         return h;
     }
 
     function genKF(c, bStyle, g) {
-        let kf = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
+        let kf = c.isGrad ? KF_RF : '';
         if (bStyle === 'pulse')  kf += `@keyframes pulseGlow {0%,100%{box-shadow:0 0 ${g} ${c.glow}} 50%{box-shadow:0 0 20px ${c.glow}}}\n`;
         if (bStyle === 'plasma') kf += `@keyframes plasmaRotate { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }\n`;
         return kf;
@@ -794,7 +980,7 @@
             if (bStyle === 'pulse') code += `  animation: pulseGlow 2s infinite ease-in-out !important;\n`;
         }
         code += `  text-shadow: 0 0 ${g} ${c.glow} !important;\n}\n\n`;
-        code += `.username, .username span {\n  display: inline-block !important;\n  flex-shrink: 0 !important;\n  background: ${c.bg} !important;\n  color: ${document.getElementById('chatUnameColor').value} !important;\n  ${c.isGrad ? 'background-size:200% 100%; animation:rf ' + dur + ' linear infinite;' : ''}\n  padding: 2px 8px !important;\n  border-radius: 6px !important;\n  text-shadow: ${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow} !important;\n  position: relative !important;\n  z-index: 2 !important;\n}\n`;
+        code += `.username, .username span, span.font-semibold, span.mr-1.font-semibold {\n  display: inline-block !important;\n  flex-shrink: 0 !important;\n  background: ${c.bg} !important;\n  color: ${document.getElementById('chatUnameColor').value} !important;\n  ${c.isGrad ? 'background-size:200% 100%; animation:rf ' + dur + ' linear infinite;' : ''}\n  padding: 2px 8px !important;\n  border-radius: 6px !important;\n  text-shadow: ${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow} !important;\n  position: relative !important;\n  z-index: 2 !important;\n}\n`;
         if (toSec > 0) code += `\n@keyframes mTO { 0%, ${((toSec-0.5)/toSec*100).toFixed(2)}% { opacity:1; } 100% { opacity:0; max-height:0; padding:0; margin:0; } }\n.chat-message { animation: mTO ${toSec}s forwards !important; }\n`;
         return genKF(c, bStyle, g) + code;
     }
@@ -815,29 +1001,25 @@
             const rot = s === 'diamond' ? 'translate(-50%,-50%) rotate(45deg)' : 'translate(-50%,-50%)';
             code += `.milestone-marker, div[title], [class*="marker"] { position: absolute !important; top: 50% !important; transform: ${rot} !important; width: 14px !important; height: 14px !important; background: #fff !important; border-radius: ${br} !important; border: 2px solid ${c.glow} !important; z-index: 2 !important; }\n`;
         }
-        const kf = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
+        const kf = c.isGrad ? KF_RF : '';
         return kf + code;
     }
 
     function genAlert(c, f, g, dur) {
         const ts = genTextStyle(c, dur, g);
-        const kf = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
+        const kf = c.isGrad ? KF_RF : '';
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — Alert Overlay — ${new Date().toLocaleDateString()} */\n`;
-        /* Container — centres the two-line layout */
-        code += `[class*="alert"] { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; gap: 14px !important; }\n`;
-        /* Header line — NEW FOLLOWER / NEW SUB etc. */
-        code += `[class*="alert"] [class*="uppercase"], [class*="alert"] span:first-child, span.uppercase.font-bold { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} display: block !important; font-size: 1.5rem !important; text-transform: uppercase !important; letter-spacing: 3px !important; margin-bottom: 0 !important; }\n`;
-        /* Separator line — injected via ::after since Joystick DOM has no .line element */
-        code += `[class*="alert"] [class*="uppercase"]::after, [class*="alert"] span:first-child::after, span.uppercase.font-bold::after { content: '' !important; display: block !important; height: 2px !important; width: 80% !important; margin: 8px auto 0 !important; background: ${c.glow} !important; box-shadow: 0 0 ${g} ${c.glow} !important; }\n`;
-        /* Username line */
-        code += `[class*="alert"] [class*="text-3xl"], [class*="alert"] [class*="text-5xl"], [class*="alert"] span:last-child, span.font.italic { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} font-size: 3rem !important; font-weight: 900 !important; display: block !important; }\n`;
+        /* Container — override Joystick v2 inline font-size/color/font-family */
+        code += `.teleport-body-target { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; font-size: 3rem !important; text-align: center !important; }\n`;
+        /* Alert text element — single string e.g. "New Follower RustyBlu" */
+        code += `.teleport-body-target > div { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} font-weight: 900 !important; }\n`;
         return kf + code;
     }
 
     function genEventList(c, f, g, dur) {
         const ts        = genTextStyle(c, dur, g);
-        const kf        = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
+        const kf        = c.isGrad ? KF_RF : '';
         const hasBubble = document.getElementById('eventListBubble').checked;
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — Event List Overlay — ${new Date().toLocaleDateString()} */\n`;
@@ -851,10 +1033,10 @@
     function genLabel(c, f, g, dur, type) {
         const typeNames = { label_lt: 'Largest Tipper', label_lf: 'Latest Follower', label_tp: 'Latest Tipper', label_ls: 'Latest Subscriber', label_ct: 'Chat Timer', list_tk: 'Tip Ticker' };
         const ts = genTextStyle(c, dur, g);
-        const kf = c.isGrad ? `@keyframes rf {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n` : '';
+        const kf = c.isGrad ? KF_RF : '';
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — ${typeNames[type] || 'Label'} Overlay — ${new Date().toLocaleDateString()} */\n`;
-        code += `div.scrollable.text-3xl[style], [class*="scrollable"], span[style*="rgb"] { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} background-color: transparent !important; }\n`;
+        code += `div.text-4xl[style], div.text-3xl[style], div.scrollable.text-3xl[style], [class*="scrollable"] { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} background-color: transparent !important; }\n`;
         return kf + code;
     }
 
@@ -895,6 +1077,10 @@
 
         document.getElementById('btnTMinus').addEventListener('click', () => { timeoutIndex = Math.max(0, timeoutIndex - 1); updateTimeoutDisplay(); update(); });
         document.getElementById('btnTPlus').addEventListener('click', () => { timeoutIndex = Math.min(timeoutValues.length - 1, timeoutIndex + 1); updateTimeoutDisplay(); update(); });
+
+        ['jtAnimation', 'jtFontSize', 'jtShadow', 'jtShadowColor'].forEach(id => {
+            document.getElementById(id).addEventListener('change', update);
+        });
 
         document.getElementById('resetBtn').addEventListener('click', () => {
             if (confirm('Reset to defaults?')) { localStorage.removeItem(storageKey); location.reload(); }
