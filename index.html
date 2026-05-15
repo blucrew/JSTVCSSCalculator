@@ -648,9 +648,9 @@
         const x    = imp ? ' !important' : '';
         const disp = imp ? '' : ' display:inline-block;';
         if (c.isGrad) {
-            return `background:${c.bg}${x}; background-size:200% 100%${x}; animation:rf ${dur} linear infinite${x}; -webkit-background-clip:text${x}; -webkit-text-fill-color:transparent${x};${disp}`;
+            return `background:${c.bg}${x}; background-size:200% 100%${x}; animation:rf ${dur} linear infinite${x}; -webkit-background-clip:text${x}; background-clip:text${x}; -webkit-text-fill-color:transparent${x}; color:transparent${x};${disp}`;
         } else if (c.bg.includes('gradient')) {
-            return `background:${c.bg}${x}; -webkit-background-clip:text${x}; -webkit-text-fill-color:transparent${x};${disp}`;
+            return `background:${c.bg}${x}; -webkit-background-clip:text${x}; background-clip:text${x}; -webkit-text-fill-color:transparent${x}; color:transparent${x};${disp}`;
         } else {
             const textCol = c.bg === '#222222' ? '#ffffff' : c.bg;
             return `color:${textCol}${x}; text-shadow:0 0 ${g} ${c.glow}${x};`;
