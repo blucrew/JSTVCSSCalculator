@@ -715,7 +715,7 @@
             document.getElementById('cssOutput').value = genChat(c, f, g, dur, op);
         } else if (isGoal) {
             simGoal(c, f, g, dur, type === 'goal_tip' ? 'Tip Goal' : 'Milestone Goal');
-            document.getElementById('cssOutput').value = genGoal(c, f, g, dur);
+            document.getElementById('cssOutput').value = genGoal(c, f, g, dur, type);
         } else if (type === 'alert') {
             simAlert(c, f, g, dur);
             document.getElementById('cssOutput').value = genAlert(c, f, g, dur);
@@ -985,21 +985,27 @@
         return genKF(c, bStyle, g) + code;
     }
 
-    function genGoal(c, f, g, dur) {
+    function genGoal(c, f, g, dur, type) {
+        const isTipGoal = type === 'goal_tip';
         const animCSS = c.isGrad ? `background-size:200% 100%; animation:rf ${dur} linear infinite;` : '';
         const s = curShape;
         let code = genHeader(f);
-        code += `/* Generated Joystick.TV Styler — Goal Overlay — ${new Date().toLocaleDateString()} */\n`;
-        code += `.p-goal-trk, [class*="bg-pink-200"], [class*="rounded-full"][class*="w-full"] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; height: 32px !important; border-radius: 16px !important; overflow: hidden !important; position: relative !important; }\n`;
-        code += `.p-goal-fill, [class*="bg-pink-200"] div[style], div[style*="width"][style*="background"] { background: ${c.bg} !important; ${animCSS} height: 100% !important; position: absolute !important; left: 0 !important; top: 0 !important; }\n`;
-        if (s === 'heart' || s === 'star') {
-            const ico = s === 'heart' ? '❤' : '★';
-            code += `.milestone-marker, div[title], [class*="marker"] { position: absolute !important; top: 50% !important; transform: translate(-50%,-50%) !important; font-size: 20px !important; color: ${c.glow} !important; text-shadow: 0 0 ${g} ${c.glow} !important; z-index: 2 !important; background: transparent !important; border: none !important; }\n`;
-            code += `.milestone-marker::before, div[title]::before, [class*="marker"]::before { content: "${ico}"; }\n`;
-        } else {
-            const br  = s === 'circle' ? '50%' : '0';
-            const rot = s === 'diamond' ? 'translate(-50%,-50%) rotate(45deg)' : 'translate(-50%,-50%)';
-            code += `.milestone-marker, div[title], [class*="marker"] { position: absolute !important; top: 50% !important; transform: ${rot} !important; width: 14px !important; height: 14px !important; background: #fff !important; border-radius: ${br} !important; border: 2px solid ${c.glow} !important; z-index: 2 !important; }\n`;
+        code += `/* Generated Joystick.TV Styler — ${isTipGoal ? 'Tip Goal' : 'Milestone Goal'} Overlay — ${new Date().toLocaleDateString()} */\n`;
+        /* v2 track: div.relative.w-full.overflow-hidden.rounded-full.border-2 — inline border-color + background-color set by Joystick JS */
+        code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; height: 32px !important; border-radius: 16px !important; overflow: hidden !important; position: relative !important; }\n`;
+        /* v2 fill: div.absolute.inset-0.rounded-full — inline width + background-color set by Joystick JS */
+        code += `div.absolute.inset-0.rounded-full[style] { background: ${c.bg} !important; ${animCSS} }\n`;
+        /* Milestone markers — only relevant for Milestone Goal type, not Tip Goal */
+        if (!isTipGoal) {
+            if (s === 'heart' || s === 'star') {
+                const ico = s === 'heart' ? '❤' : '★';
+                code += `.milestone-marker, [class*="marker"] { position: absolute !important; top: 50% !important; transform: translate(-50%,-50%) !important; font-size: 20px !important; color: ${c.glow} !important; text-shadow: 0 0 ${g} ${c.glow} !important; z-index: 2 !important; background: transparent !important; border: none !important; }\n`;
+                code += `.milestone-marker::before, [class*="marker"]::before { content: "${ico}"; }\n`;
+            } else {
+                const br  = s === 'circle' ? '50%' : '0';
+                const rot = s === 'diamond' ? 'translate(-50%,-50%) rotate(45deg)' : 'translate(-50%,-50%)';
+                code += `.milestone-marker, [class*="marker"] { position: absolute !important; top: 50% !important; transform: ${rot} !important; width: 14px !important; height: 14px !important; background: #fff !important; border-radius: ${br} !important; border: 2px solid ${c.glow} !important; z-index: 2 !important; }\n`;
+            }
         }
         const kf = c.isGrad ? KF_RF : '';
         return kf + code;
