@@ -989,6 +989,9 @@
         const bgSize = (c.isGrad || c.bg.includes('gradient')) ? 'background-size: 100vw 100% !important; background-position: left center !important;' : '';
         code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute { background: ${c.bg} !important; ${bgSize} ${animCSS} }\n`;
         /* Note: Joystick v2 removed milestone marker DOM elements — no marker CSS generated */
+        /* Text label (title + % + amount) — sits inside the track, reduce font so all items fit in one line */
+        const ts = genTextStyle(c, dur, g);
+        code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; font-size: 0.85rem !important; white-space: nowrap !important; ${ts} }\n`;
         const kf = c.isGrad ? KF_RF : '';
         return kf + code;
     }
