@@ -971,7 +971,8 @@
             if (bStyle === 'pulse') code += `  animation: pulseGlow 2s infinite ease-in-out !important;\n`;
         }
         code += `  text-shadow: 0 0 ${g} ${c.glow} !important;\n}\n\n`;
-        code += `.username, .username span, span.font-semibold, span.mr-1.font-semibold {\n  display: inline-block !important;\n  flex-shrink: 0 !important;\n  background: ${c.bg} !important;\n  color: ${document.getElementById('chatUnameColor').value} !important;\n  ${c.isGrad ? 'background-size:200% 100%; animation:rf ' + dur + ' linear infinite;' : ''}\n  padding: 2px 8px !important;\n  border-radius: 6px !important;\n  text-shadow: ${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow} !important;\n  position: relative !important;\n  z-index: 2 !important;\n}\n`;
+        /* v2 username: confirmed class "mr-1 cursor-pointer font-semibold" */
+        code += `span.mr-1.cursor-pointer.font-semibold, span.mr-1.font-semibold {\n  display: inline-block !important;\n  flex-shrink: 0 !important;\n  background: ${c.bg} !important;\n  color: ${document.getElementById('chatUnameColor').value} !important;\n  ${c.isGrad ? 'background-size:200% 100%; animation:rf ' + dur + ' linear infinite;' : ''}\n  padding: 2px 8px !important;\n  border-radius: 6px !important;\n  text-shadow: ${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow} !important;\n  position: relative !important;\n  z-index: 2 !important;\n}\n`;
         if (toSec > 0) code += `\n@keyframes mTO { 0%, ${((toSec-0.5)/toSec*100).toFixed(2)}% { opacity:1; } 100% { opacity:0; max-height:0; padding:0; margin:0; } }\n.chat-message { animation: mTO ${toSec}s forwards !important; }\n`;
         return genKF(c, bStyle, g) + code;
     }
@@ -1014,10 +1015,11 @@
         const hasBubble = document.getElementById('eventListBubble').checked;
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — Event List Overlay — ${new Date().toLocaleDateString()} */\n`;
-        code += hasBubble
-            ? `[class*="event-list"], [class*="session-stats"] { background: rgba(10,10,10,0.88) !important; border: 2px solid ${c.glow} !important; box-shadow: 0 0 ${g} ${c.glow} !important; border-radius: 12px !important; padding: 18px !important; display: flex !important; flex-direction: column !important; gap: 10px !important; }\n`
-            : `[class*="event-list"], [class*="session-stats"] { display: flex !important; flex-direction: column !important; gap: 10px !important; }\n`;
-        code += `[class*="event-item"], [class*="stat-item"] { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} font-size: 1.2rem !important; display: block !important; margin-bottom: 5px !important; }\n`;
+        /* v2: event list uses fully dynamic classes from overlay composable — target by structural position */
+        if (hasBubble) {
+            code += `body.layout-overlay div[class][style] { background: rgba(10,10,10,0.88) !important; border: 2px solid ${c.glow} !important; box-shadow: 0 0 ${g} ${c.glow} !important; border-radius: 12px !important; padding: 18px !important; }\n`;
+        }
+        code += `body.layout-overlay div[class][style] > div { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} font-size: 1.2rem !important; margin-bottom: 5px !important; }\n`;
         return kf + code;
     }
 
@@ -1027,7 +1029,32 @@
         const kf = c.isGrad ? KF_RF : '';
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — ${typeNames[type] || 'Label'} Overlay — ${new Date().toLocaleDateString()} */\n`;
-        code += `div.text-4xl[style], div.text-3xl[style], div.scrollable.text-3xl[style], [class*="scrollable"] { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; ${ts} background-color: transparent !important; }\n`;
+        const ff = `font-family: ${f}, Impact, 'Arial Black', sans-serif !important;`;
+
+        if (type === 'list_tk') {
+            /* Tip Ticker — confirmed v2: ticker-container wraps ticker-content with GSAP scroll; ticker-item is each span */
+            code += `div.ticker-container { ${ff} }\n`;
+            code += `span.ticker-item { ${ts} ${ff} }\n`;
+
+        } else if (type === 'label_lt' || type === 'label_tp') {
+            /* Largest Tipper / Latest Tipper — confirmed v2: row=div.flex.flex-row.items-center.space-x-1, name=span.mr-6, amount=span:last-child */
+            code += `span.mr-6 { ${ts} ${ff} font-weight: 900 !important; }\n`;
+            code += `div.flex.flex-row.items-center.space-x-1 > span:last-child { ${ts} ${ff} }\n`;
+
+        } else if (type === 'label_lf') {
+            /* Latest Follower — confirmed v2: dynamic root div[class][style], username in child span */
+            code += `body.layout-overlay div[class][style] > span { ${ts} ${ff} font-weight: 900 !important; }\n`;
+
+        } else if (type === 'label_ls') {
+            /* Latest Subscriber — confirmed v2: username injected as innerHTML on root div itself, no child span */
+            code += `body.layout-overlay div[class][style] { ${ts} ${ff} font-weight: 900 !important; }\n`;
+
+        } else if (type === 'label_ct') {
+            /* Chat Timer — confirmed v2: no stable class selectors, all dynamic from composable */
+            code += `body.layout-overlay { ${ff} }\n`;
+            code += `body.layout-overlay div[class][style] > div { ${ts} ${ff} }\n`;
+        }
+
         return kf + code;
     }
 
