@@ -992,7 +992,7 @@
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — ${isTipGoal ? 'Tip Goal' : 'Milestone Goal'} Overlay — ${new Date().toLocaleDateString()} */\n`;
         /* v2 track: div.relative.w-full.overflow-hidden.rounded-full.border-2 — inline border-color + background-color set by Joystick JS */
-        code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; height: 32px !important; border-radius: 16px !important; overflow: hidden !important; position: relative !important; }\n`;
+        code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; overflow: hidden !important; }\n`;
         /* v2 fill: div.absolute.inset-0.rounded-full — inline width + background-color set by Joystick JS */
         code += `div.absolute.inset-0.rounded-full[style] { background: ${c.bg} !important; ${animCSS} }\n`;
         /* Milestone markers — only relevant for Milestone Goal type, not Tip Goal */
