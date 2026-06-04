@@ -337,17 +337,8 @@
             <input type="color" id="chatMsgColor" value="#ffffff">
         </div>
 
-        <!-- ── 12. Milestone Marker Shape (goal only) ──── -->
-        <div id="groupGoal" class="group hidden">
-            <label>Milestone Marker Shape</label>
-            <div class="shape-grid">
-                <div class="shape-btn active" data-shape="circle"><div class="v-circle"></div></div>
-                <div class="shape-btn" data-shape="square"><div class="v-square"></div></div>
-                <div class="shape-btn" data-shape="diamond"><div class="v-diamond"></div></div>
-                <div class="shape-btn" data-shape="heart">❤</div>
-                <div class="shape-btn" data-shape="star">★</div>
-            </div>
-        </div>
+        <!-- ── 12. Milestone Marker Shape (goal only) — hidden, v2 removed marker elements ──── -->
+        <div id="groupGoal" class="group hidden" style="display:none !important;"></div>
 
         <!-- ── 13. Event List bubble (list_ev only) ────── -->
         <div id="groupEventBubble" class="group hidden">
@@ -993,20 +984,11 @@
         code += `/* Generated Joystick.TV Styler — ${isTipGoal ? 'Tip Goal' : 'Milestone Goal'} Overlay — ${new Date().toLocaleDateString()} */\n`;
         /* v2 track: div.relative.w-full.overflow-hidden.rounded-full.border-2 — inline border-color + background-color set by Joystick JS */
         code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; overflow: hidden !important; }\n`;
-        /* v2 fill: direct absolute child of the track — child combinator is more robust than chaining Tailwind class names */
-        code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute[style] { background: ${c.bg} !important; ${animCSS} }\n`;
-        /* Milestone markers — only relevant for Milestone Goal type, not Tip Goal */
-        if (!isTipGoal) {
-            if (s === 'heart' || s === 'star') {
-                const ico = s === 'heart' ? '❤' : '★';
-                code += `.milestone-marker, [class*="marker"] { position: absolute !important; top: 50% !important; transform: translate(-50%,-50%) !important; font-size: 20px !important; color: ${c.glow} !important; text-shadow: 0 0 ${g} ${c.glow} !important; z-index: 2 !important; background: transparent !important; border: none !important; }\n`;
-                code += `.milestone-marker::before, [class*="marker"]::before { content: "${ico}"; }\n`;
-            } else {
-                const br  = s === 'circle' ? '50%' : '0';
-                const rot = s === 'diamond' ? 'translate(-50%,-50%) rotate(45deg)' : 'translate(-50%,-50%)';
-                code += `.milestone-marker, [class*="marker"] { position: absolute !important; top: 50% !important; transform: ${rot} !important; width: 14px !important; height: 14px !important; background: #fff !important; border-radius: ${br} !important; border: 2px solid ${c.glow} !important; z-index: 2 !important; }\n`;
-            }
-        }
+        /* v2 fill: direct absolute child of the track — child combinator avoids fragile Tailwind class chain */
+        /* background-size: 100vw so gradient spans full bar width at any progress % */
+        const bgSize = (c.isGrad || c.bg.includes('gradient')) ? 'background-size: 100vw 100% !important; background-position: left center !important;' : '';
+        code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute { background: ${c.bg} !important; ${bgSize} ${animCSS} }\n`;
+        /* Note: Joystick v2 removed milestone marker DOM elements — no marker CSS generated */
         const kf = c.isGrad ? KF_RF : '';
         return kf + code;
     }
