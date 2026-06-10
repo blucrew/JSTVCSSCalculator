@@ -300,12 +300,13 @@
 
         <!-- ── 7. Bubble / Border Style (chat only) ────── -->
         <div class="group" id="groupBubble">
-            <label>Bubble / Border Style</label>
+            <label>Message Bubble Style</label>
             <select id="bubbleStyle">
                 <option value="pulse" selected>Pulsing Glow</option>
                 <option value="solid">Solid Border</option>
                 <option value="cyber">Cyberpunk Edge</option>
                 <option value="plasma">Plasma Border</option>
+                <option value="none">Transparent (No Bubble)</option>
             </select>
         </div>
 
@@ -314,6 +315,17 @@
             <label>Bubble Opacity</label>
             <input type="range" id="bubbleOpacity" min="0" max="100" value="95" step="5">
             <div id="opacityValue" style="text-align:center; margin-top:5px;">95%</div>
+        </div>
+
+        <!-- ── 9a. Username Style (chat only) ─────────── -->
+        <div class="group hidden" id="groupUnameStyle">
+            <label>Username Style</label>
+            <select id="unameStyle">
+                <option value="badge" selected>Badge (Colored Box)</option>
+                <option value="gradient-text">Gradient / Colored Text</option>
+                <option value="none">No Effect (Default)</option>
+            </select>
+            <div class="sub-hint">Controls how the display name looks — independently from the message bubble</div>
         </div>
 
         <!-- ── 9. Username Outline (chat only) ─────────── -->
@@ -711,11 +723,14 @@
         const isGoal  = type.startsWith('goal');
         const isLabel = LABEL_TYPES.includes(type);
 
+        const bStyleVal   = document.getElementById('bubbleStyle').value;
+        const unameStyleV = document.getElementById('unameStyle').value;
         document.getElementById('groupBubble').classList.toggle('hidden', !isChat);
-        document.getElementById('groupOpacity').classList.toggle('hidden', !isChat);
+        document.getElementById('groupOpacity').classList.toggle('hidden', !isChat || bStyleVal === 'none');
         document.getElementById('groupTimeout').classList.toggle('hidden', !isChat);
-        document.getElementById('groupUnameOutline').classList.toggle('hidden', !isChat);
-        document.getElementById('groupUnameColor').classList.toggle('hidden', !isChat);
+        document.getElementById('groupUnameStyle').classList.toggle('hidden', !isChat);
+        document.getElementById('groupUnameOutline').classList.toggle('hidden', !isChat || unameStyleV === 'none');
+        document.getElementById('groupUnameColor').classList.toggle('hidden', !isChat || unameStyleV === 'none' || unameStyleV === 'gradient-text');
         document.getElementById('groupMsgColor').classList.toggle('hidden', !isChat);
         document.getElementById('groupGoal').classList.toggle('hidden', !isGoal);
         document.getElementById('groupLabelPrefix').classList.toggle('hidden', !isLabel);
@@ -758,13 +773,22 @@
     // ─── SIM FUNCTIONS ────────────────────────────────────────────────────────
 
     function simChat(c, f, g, dur, op) {
-        const stage  = document.getElementById('preview-stage');
-        const to     = document.getElementById('timeoutToggle').checked ? timeoutValues[timeoutIndex] * 1000 : null;
-        const bStyle = document.getElementById('bubbleStyle').value;
+        const stage      = document.getElementById('preview-stage');
+        const to         = document.getElementById('timeoutToggle').checked ? timeoutValues[timeoutIndex] * 1000 : null;
+        const bStyle     = document.getElementById('bubbleStyle').value;
+        const unameStyle = document.getElementById('unameStyle').value;
+        const outline    = document.getElementById('unameOutline').value;
+        const unameCol   = document.getElementById('chatUnameColor').value;
+        const msgCol     = document.getElementById('chatMsgColor').value;
+
         const add = () => {
             const m = document.createElement('div');
-            m.className = `p-bubble chat-message style-${bStyle}`;
-            if (bStyle === 'plasma') {
+            m.className = `p-bubble chat-message`;
+
+            // ── Bubble styling ──────────────────────────────
+            if (bStyle === 'none') {
+                m.style.cssText = `font-family:${f}; background:transparent; border:none; box-shadow:none; padding:4px 2px;`;
+            } else if (bStyle === 'plasma') {
                 m.style.cssText = `font-family:${f}; border:2px solid transparent; background-image:linear-gradient(rgba(10,10,10,${op}),rgba(10,10,10,${op})),${c.bg}; background-origin:border-box; background-clip:padding-box,border-box; background-size:200% 200%; animation:plasmaRotate 3s linear infinite;`;
             } else if (bStyle === 'cyber') {
                 m.style.cssText = `font-family:${f}; background:rgba(10,10,10,${op}); clip-path:polygon(0% 0%,95% 0%,100% 25%,100% 100%,8% 100%,0% 80%); border-radius:0; border:none; border-left:5px solid ${c.glow};`;
@@ -773,7 +797,21 @@
                 const glow = bStyle === 'pulse' ? `box-shadow:0 0 ${g} ${c.glow};` : '';
                 m.style.cssText = `font-family:${f}; background:rgba(10,10,10,${op}); ${bdr} ${glow}`;
             }
-            m.innerHTML = `<span class="p-uname" style="background:${c.bg}; color:${document.getElementById('chatUnameColor').value}; ${c.isGrad ? 'background-size:200% 100%; animation:rf '+dur+' linear infinite;' : ''} text-shadow:${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow};">${souls[Math.floor(Math.random()*souls.length)]}</span> : <span style="color:${document.getElementById('chatMsgColor').value}">${chatMessages[Math.floor(Math.random()*chatMessages.length)]}</span>`;
+
+            // ── Username styling ────────────────────────────
+            let unameInline;
+            if (unameStyle === 'badge') {
+                const animG = c.isGrad ? `background-size:200% 100%; animation:rf ${dur} linear infinite;` : '';
+                unameInline = `background:${c.bg}; ${animG} color:${unameCol}; text-shadow:${getOut(outline)}0 0 ${g} ${c.glow}; padding:2px 6px; border-radius:4px; margin-right:4px; display:inline-block;`;
+            } else if (unameStyle === 'gradient-text') {
+                const ts = themedText(c, dur, g);
+                unameInline = `${ts} padding:0; margin-right:6px; display:inline-block;`;
+            } else {
+                // none — unstyled name
+                unameInline = `color:#ccc; padding:0; margin-right:6px;`;
+            }
+
+            m.innerHTML = `<span style="${unameInline}">${souls[Math.floor(Math.random()*souls.length)]}</span><span style="color:${msgCol};">${chatMessages[Math.floor(Math.random()*chatMessages.length)]}</span>`;
             stage.appendChild(m);
             if (to !== null) setTimeout(() => { m.style.opacity = '0'; setTimeout(() => m.remove(), 500); }, to);
             if (stage.children.length > 8) stage.firstChild.remove();
@@ -997,23 +1035,46 @@
     }
 
     function genChat(c, f, g, dur, op) {
-        const bStyle = document.getElementById('bubbleStyle').value;
-        const toSec  = document.getElementById('timeoutToggle').checked ? timeoutValues[timeoutIndex] : 0;
+        const bStyle     = document.getElementById('bubbleStyle').value;
+        const unameStyle = document.getElementById('unameStyle').value;
+        const toSec      = document.getElementById('timeoutToggle').checked ? timeoutValues[timeoutIndex] : 0;
+        const msgCol     = document.getElementById('chatMsgColor').value;
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — Chat Overlay — ${new Date().toLocaleDateString()} */\n`;
-        code += `.chat-message {\n  font-family: ${f}, Impact, 'Arial Black', sans-serif !important;\n  color: ${document.getElementById('chatMsgColor').value} !important;\n  background: rgba(10,10,10,${op}) !important;\n  padding: 12px 18px !important;\n  border-radius: 12px !important;\n  line-height: 1.6 !important;\n  position: relative !important;\n  z-index: 1 !important;\n  overflow: visible !important;\n`;
-        if (bStyle === 'cyber') {
-            code += `  clip-path: polygon(0% 0%, 95% 0%, 100% 25%, 100% 100%, 8% 100%, 0% 80%) !important;\n  border-left: 5px solid ${c.glow} !important;\n`;
+        code += `/* Username style: ${unameStyle} | Bubble: ${bStyle} */\n\n`;
+
+        // ── .chat-message bubble ──────────────────────────────
+        code += `.chat-message {\n  font-family: ${f}, Impact, 'Arial Black', sans-serif !important;\n  color: ${msgCol} !important;\n  line-height: 1.6 !important;\n  position: relative !important;\n  z-index: 1 !important;\n  overflow: visible !important;\n`;
+        if (bStyle === 'none') {
+            code += `  background: transparent !important;\n  border: none !important;\n  box-shadow: none !important;\n  animation: none !important;\n  padding: 4px 2px !important;\n`;
+        } else if (bStyle === 'cyber') {
+            code += `  background: rgba(10,10,10,${op}) !important;\n  padding: 12px 18px !important;\n  border-radius: 12px !important;\n  clip-path: polygon(0% 0%, 95% 0%, 100% 25%, 100% 100%, 8% 100%, 0% 80%) !important;\n  border-left: 5px solid ${c.glow} !important;\n  text-shadow: 0 0 ${g} ${c.glow} !important;\n`;
         } else if (bStyle === 'plasma') {
-            code += `  border: 2px solid transparent !important;\n  background-image: linear-gradient(rgba(10,10,10,${op}), rgba(10,10,10,${op})), ${c.bg} !important;\n  background-origin: border-box !important;\n  background-clip: padding-box, border-box !important;\n  background-size: 200% 200% !important;\n  animation: plasmaRotate 3s linear infinite !important;\n`;
+            code += `  background-image: linear-gradient(rgba(10,10,10,${op}), rgba(10,10,10,${op})), ${c.bg} !important;\n  background-origin: border-box !important;\n  background-clip: padding-box, border-box !important;\n  background-size: 200% 200% !important;\n  animation: plasmaRotate 3s linear infinite !important;\n  border: 2px solid transparent !important;\n  padding: 12px 18px !important;\n  border-radius: 12px !important;\n  text-shadow: 0 0 ${g} ${c.glow} !important;\n`;
         } else {
-            code += `  border: 2px solid ${c.isGrad ? 'transparent' : c.glow} !important;\n`;
+            code += `  background: rgba(10,10,10,${op}) !important;\n  padding: 12px 18px !important;\n  border-radius: 12px !important;\n  border: 2px solid ${c.isGrad ? 'transparent' : c.glow} !important;\n`;
             if (c.isGrad) code += `  border-image: ${c.bg} 1 !important;\n`;
             if (bStyle === 'pulse') code += `  animation: pulseGlow 2s infinite ease-in-out !important;\n`;
+            code += `  text-shadow: 0 0 ${g} ${c.glow} !important;\n`;
         }
-        code += `  text-shadow: 0 0 ${g} ${c.glow} !important;\n}\n\n`;
-        /* v2 username: confirmed class "mr-1 cursor-pointer font-semibold" */
-        code += `span.mr-1.cursor-pointer.font-semibold, span.mr-1.font-semibold {\n  display: inline-block !important;\n  flex-shrink: 0 !important;\n  background: ${c.bg} !important;\n  color: ${document.getElementById('chatUnameColor').value} !important;\n  ${c.isGrad ? 'background-size:200% 100%; animation:rf ' + dur + ' linear infinite;' : ''}\n  padding: 2px 8px !important;\n  border-radius: 6px !important;\n  text-shadow: ${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow} !important;\n  position: relative !important;\n  z-index: 2 !important;\n}\n`;
+        code += `}\n\n`;
+
+        // ── Username / display name ───────────────────────────
+        /* v2 confirmed class: span.mr-1.cursor-pointer.font-semibold */
+        const unameSelectors = `span.mr-1.cursor-pointer.font-semibold, span.mr-1.font-semibold`;
+        if (unameStyle === 'badge') {
+            /* Colored badge box behind the name */
+            const animG = c.isGrad ? `background-size: 200% 100% !important; animation: rf ${dur} linear infinite !important;` : '';
+            code += `${unameSelectors} {\n  display: inline-block !important;\n  flex-shrink: 0 !important;\n  background: ${c.bg} !important;\n  ${animG}\n  color: ${document.getElementById('chatUnameColor').value} !important;\n  padding: 2px 8px !important;\n  border-radius: 6px !important;\n  text-shadow: ${getOut(document.getElementById('unameOutline').value)}0 0 ${g} ${c.glow} !important;\n  position: relative !important;\n  z-index: 2 !important;\n}\n`;
+        } else if (unameStyle === 'gradient-text') {
+            /* Gradient/color applied to the text itself — no badge box */
+            const ts = genTextStyle(c, dur, g);
+            code += `${unameSelectors} {\n  display: inline-block !important;\n  background: none !important;\n  padding: 0 !important;\n  ${ts}\n  position: relative !important;\n  z-index: 2 !important;\n}\n`;
+        } else {
+            /* none — emit a comment so users know it's intentional */
+            code += `/* Username style: None — inheriting Joystick's default display name styling */\n`;
+        }
+
         if (toSec > 0) code += `\n@keyframes mTO { 0%, ${((toSec-0.5)/toSec*100).toFixed(2)}% { opacity:1; } 100% { opacity:0; max-height:0; padding:0; margin:0; } }\n.chat-message { animation: mTO ${toSec}s forwards !important; }\n`;
         return genKF(c, bStyle, g) + code;
     }
