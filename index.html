@@ -481,12 +481,12 @@
         goal_tip: { label: '🟢 OBS tested — rainbow + text + bar all confirmed working',    color: '#22c55e' },
         goal_ms:  { label: '🔵 Bundle verified — same component as Tip Goal',               color: '#60a5fa' },
         list_tk:  { label: '🔵 Bundle verified — ticker-container / ticker-item classes',   color: '#60a5fa' },
-        label_lt: { label: '🔵 Bundle verified — span.mr-6 + span:last-child',             color: '#60a5fa' },
-        label_tp: { label: '🔵 Bundle verified — same DOM structure as Largest Tipper',    color: '#60a5fa' },
-        label_lf: { label: '🔵 Bundle verified — body.layout-overlay div > span',          color: '#60a5fa' },
-        label_ls: { label: '🔵 Bundle verified — username on root div (no child span)',     color: '#60a5fa' },
-        list_ev:  { label: '⚠ Broad selector — test in OBS before going live',             color: '#f59e0b' },
-        label_ct: { label: '⚠ Broad selector — may conflict if other overlays are present', color: '#f59e0b' },
+        label_lt: { label: '🔵 Bundle verified — span.mr-6 + span:last-child',              color: '#60a5fa' },
+        label_tp: { label: '🟢 OBS confirmed — same DOM as Largest Tipper, both tested',   color: '#22c55e' },
+        label_lf: { label: '🟢 OBS confirmed — text node in div[class][style] (fixed)',    color: '#22c55e' },
+        label_ls: { label: '🟢 OBS confirmed — text node in div[class][style]',            color: '#22c55e' },
+        list_ev:  { label: '🟢 OBS confirmed — body class delay ~6s is normal',            color: '#22c55e' },
+        label_ct: { label: '🟢 OBS confirmed — text node in div[class][style] (fixed)',    color: '#22c55e' },
     };
 
     const labelNames = {
@@ -1147,17 +1147,16 @@
             code += `div.flex.flex-row.items-center.space-x-1 > span:last-child { ${ts} ${ff} }\n`;
 
         } else if (type === 'label_lf') {
-            /* Latest Follower — confirmed v2: dynamic root div[class][style], username in child span */
-            code += `body.layout-overlay div[class][style] > span { ${ts} ${ff} font-weight: 900 !important; }\n`;
+            /* Latest Follower — DOM confirmed: username is a text node directly inside div[class][style], NO child span */
+            code += `body.layout-overlay div[class][style] { ${ts} ${ff} font-weight: 900 !important; }\n`;
 
         } else if (type === 'label_ls') {
-            /* Latest Subscriber — confirmed v2: username injected as innerHTML on root div itself, no child span */
+            /* Latest Subscriber — DOM confirmed: username is a text node directly inside div[class][style], no child span */
             code += `body.layout-overlay div[class][style] { ${ts} ${ff} font-weight: 900 !important; }\n`;
 
         } else if (type === 'label_ct') {
-            /* Chat Timer — confirmed v2: no stable class selectors, all dynamic from composable */
-            code += `body.layout-overlay { ${ff} }\n`;
-            code += `body.layout-overlay div[class][style] > div { ${ts} ${ff} }\n`;
+            /* Chat Timer — DOM confirmed: countdown is a text node directly inside div[class][style], NO child div */
+            code += `body.layout-overlay div[class][style] { ${ts} ${ff} }\n`;
         }
 
         return kf + code;
