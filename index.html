@@ -58,8 +58,9 @@
         .v-diamond { width: 14px; height: 14px; background: #fff; transform: rotate(45deg); }
 
         /* ── Goal bar ───────────────────────────────────── */
-        .p-goal-trk { background: rgba(0,0,0,0.7); border: 2px solid #555; height: 32px; border-radius: 16px; position: relative; overflow: hidden; }
-        .p-goal-fill { height: 100%; position: absolute; left: 0; top: 0; }
+        /* No fixed height — let text inside determine it, matching v2 */
+        .p-goal-trk { background: rgba(0,0,0,0.7); border: 2px solid #555; border-radius: 9999px; position: relative; overflow: hidden; }
+        .p-goal-fill { height: 100%; position: absolute; inset: 0; }
 
         /* ── Toggle switch ──────────────────────────────── */
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
@@ -337,8 +338,17 @@
             <input type="color" id="chatMsgColor" value="#ffffff">
         </div>
 
-        <!-- ── 12. Milestone Marker Shape (goal only) — hidden, v2 removed marker elements ──── -->
-        <div id="groupGoal" class="group hidden" style="display:none !important;"></div>
+        <!-- ── 12. Goal bar width (goal types only) ────── -->
+        <div id="groupGoal" class="group hidden">
+            <label>Goal Bar Width</label>
+            <select id="goalBarWidth">
+                <option value="100%">Full Width (100%)</option>
+                <option value="75%">Three Quarters (75%)</option>
+                <option value="50%" selected>Half Width (50%)</option>
+                <option value="33%">One Third (33%)</option>
+            </select>
+            <div class="sub-hint">Resizes the bar in OBS — center-aligned</div>
+        </div>
 
         <!-- ── 13. Event List bubble (list_ev only) ────── -->
         <div id="groupEventBubble" class="group hidden">
@@ -449,6 +459,22 @@
         label_tp: 'Big single-name label — latest tipper',
         label_ls: 'Big single-name label — latest subscriber',
         label_ct: 'Countdown / count-up chat timer display'
+    };
+
+    /* CSS selector confidence per type.
+       🟢 OBS tested  |  🔵 Bundle-confirmed (not OBS tested)  |  ⚠ Broad structural (use with care) */
+    const confStatus = {
+        chat:     { label: '🟢 Confirmed — selectors verified from v2 bundle',             color: '#22c55e' },
+        alert:    { label: '🟢 Confirmed — .teleport-body-target from live DOM',            color: '#22c55e' },
+        goal_tip: { label: '🟢 OBS tested — rainbow + text + bar all confirmed working',    color: '#22c55e' },
+        goal_ms:  { label: '🔵 Bundle verified — same component as Tip Goal',               color: '#60a5fa' },
+        list_tk:  { label: '🔵 Bundle verified — ticker-container / ticker-item classes',   color: '#60a5fa' },
+        label_lt: { label: '🔵 Bundle verified — span.mr-6 + span:last-child',             color: '#60a5fa' },
+        label_tp: { label: '🔵 Bundle verified — same DOM structure as Largest Tipper',    color: '#60a5fa' },
+        label_lf: { label: '🔵 Bundle verified — body.layout-overlay div > span',          color: '#60a5fa' },
+        label_ls: { label: '🔵 Bundle verified — username on root div (no child span)',     color: '#60a5fa' },
+        list_ev:  { label: '⚠ Broad selector — test in OBS before going live',             color: '#f59e0b' },
+        label_ct: { label: '⚠ Broad selector — may conflict if other overlays are present', color: '#f59e0b' },
     };
 
     const labelNames = {
@@ -677,7 +703,9 @@
             `@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-50%)}}`
         ].join('');
 
-        document.getElementById('typeHint').textContent = typeHints[type] || '';
+        const st = confStatus[type];
+        document.getElementById('typeHint').innerHTML = (typeHints[type] || '') +
+            (st ? `<br><span style="color:${st.color}; font-style:normal; font-size:0.7rem; font-weight:600;">${st.label}</span>` : '');
 
         const isChat  = type === 'chat';
         const isGoal  = type.startsWith('goal');
@@ -705,7 +733,7 @@
             simChat(c, f, g, dur, op);
             document.getElementById('cssOutput').value = genChat(c, f, g, dur, op);
         } else if (isGoal) {
-            simGoal(c, f, g, dur, type === 'goal_tip' ? 'Tip Goal' : 'Milestone Goal');
+            simGoal(c, f, g, dur, type);
             document.getElementById('cssOutput').value = genGoal(c, f, g, dur, type);
         } else if (type === 'alert') {
             simAlert(c, f, g, dur);
@@ -753,16 +781,27 @@
         add(); simInt = setInterval(add, 3000);
     }
 
-    function simGoal(c, f, g, dur, txt) {
+    /* simGoal — matches actual Joystick v2 DOM:
+       - Text (title · % · amount) is INSIDE the bar track, not above it
+       - No milestone markers (v2 removed them)
+       - Width driven by goalBarWidth control */
+    function simGoal(c, f, g, dur, type) {
         const stage     = document.getElementById('preview-stage');
         const fillStyle = c.isGrad
             ? `background:${c.bg}; background-size:200% 100%; animation:rf ${dur} linear infinite;`
             : `background:${c.bg};`;
-        const mkIcon = getIco(curShape);
-        const mk = pct => `<div style="position:absolute; left:${pct}%; top:50%; transform:translate(-50%,-50%); font-size:20px; color:${c.glow}; text-shadow:0 0 ${g} ${c.glow}; z-index:2;">${mkIcon}</div>`;
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = `width:100%; font-family:${f};`;
-        wrapper.innerHTML = `<div style="display:flex; justify-content:space-between; color:#fff; font-size:22px; margin-bottom:10px; font-weight:bold; text-shadow:0 0 ${g} ${c.glow};"><span>${txt}</span><span>1500 / 3000</span></div><div class="p-goal-trk"><div class="p-goal-fill" style="${fillStyle} width:50%;"></div>${mk(25)}${mk(50)}${mk(75)}</div>`;
+        const ts       = themedText(c, dur, g);
+        const barWidth = document.getElementById('goalBarWidth')?.value || '100%';
+        const label    = type === 'goal_tip' ? 'Tip Goal' : 'Milestone Goal';
+        const wrapper  = document.createElement('div');
+        wrapper.style.cssText = `width:${barWidth}; font-family:${f}; margin:0 auto;`;
+        wrapper.innerHTML =
+            `<div class="p-goal-trk">` +
+                `<div class="p-goal-fill" style="${fillStyle} width:50%;"></div>` +
+                `<div style="position:relative; z-index:10; padding:7px 14px; text-align:center; font-size:0.85rem; white-space:nowrap; ${ts}">` +
+                    `${label} &nbsp;·&nbsp; 50% &nbsp;·&nbsp; 1,500 / 3,000` +
+                `</div>` +
+            `</div>`;
         stage.appendChild(wrapper);
     }
 
@@ -933,6 +972,8 @@
             rows = [['Font Size', sizeName]];
         }
 
+        const st = confStatus[type];
+        if (st) rows.push(['CSS Selectors', `<span style="color:${st.color}; font-weight:700;">${st.label}</span>`]);
         content.innerHTML = rows.map(([k, v]) =>
             `<div class="jt-row"><span>${k}</span><span>${v}</span></div>`
         ).join('');
@@ -979,18 +1020,21 @@
 
     function genGoal(c, f, g, dur, type) {
         const isTipGoal = type === 'goal_tip';
-        const animCSS = c.isGrad ? `background-size:200% 100%; animation:rf ${dur} linear infinite;` : '';
-        const s = curShape;
+        const animCSS   = c.isGrad ? `background-size:200% 100%; animation:rf ${dur} linear infinite;` : '';
+        const barWidth  = document.getElementById('goalBarWidth')?.value || '100%';
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — ${isTipGoal ? 'Tip Goal' : 'Milestone Goal'} Overlay — ${new Date().toLocaleDateString()} */\n`;
-        /* v2 track: div.relative.w-full.overflow-hidden.rounded-full.border-2 — inline border-color + background-color set by Joystick JS */
+        /* Bar width override (when not full) — target the track element directly */
+        if (barWidth !== '100%') {
+            code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { width: ${barWidth} !important; margin: 0 auto !important; }\n`;
+        }
+        /* Track background + border — Joystick injects inline style so [style] boosts specificity */
         code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; overflow: hidden !important; }\n`;
-        /* v2 fill: direct absolute child of the track — child combinator avoids fragile Tailwind class chain */
-        /* background-size: 100vw so gradient spans full bar width at any progress % */
+        /* Fill — direct child combinator; background-size:100vw so gradient spans full bar at any progress % */
         const bgSize = (c.isGrad || c.bg.includes('gradient')) ? 'background-size: 100vw 100% !important; background-position: left center !important;' : '';
         code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute { background: ${c.bg} !important; ${bgSize} ${animCSS} }\n`;
-        /* Note: Joystick v2 removed milestone marker DOM elements — no marker CSS generated */
-        /* Text label (title + % + amount) — sits inside the track, reduce font so all items fit in one line */
+        /* Text label (title · % · amount) inside track — font-size kept small so all three items fit one line */
+        /* Note: Joystick v2 removed milestone marker DOM elements — no marker CSS needed */
         const ts = genTextStyle(c, dur, g);
         code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; font-size: 0.85rem !important; white-space: nowrap !important; ${ts} }\n`;
         const kf = c.isGrad ? KF_RF : '';
