@@ -342,16 +342,22 @@
             <input type="color" id="chatMsgColor" value="#ffffff">
         </div>
 
-        <!-- ── 12. Goal bar width (goal types only) ────── -->
+        <!-- ── 12. Goal bar controls (goal types only) ─── -->
         <div id="groupGoal" class="group hidden">
-            <label>Goal Bar Width</label>
+            <label>Label Position</label>
+            <select id="goalLabelPos">
+                <option value="above" selected>Above the bar</option>
+                <option value="below">Below the bar</option>
+                <option value="inside">Inside the bar</option>
+            </select>
+            <label style="margin-top:10px;">Goal Bar Width</label>
             <select id="goalBarWidth">
                 <option value="100%">Full Width (100%)</option>
                 <option value="75%">Three Quarters (75%)</option>
                 <option value="50%" selected>Half Width (50%)</option>
                 <option value="33%">One Third (33%)</option>
             </select>
-            <div class="sub-hint">Resizes the bar in OBS — center-aligned</div>
+            <div class="sub-hint">Width resizes the bar in OBS — center-aligned</div>
         </div>
 
         <!-- ── 13. Event List bubble (list_ev only) ────── -->
@@ -816,21 +822,43 @@
         const fillStyle = c.isGrad
             ? `background:${c.bg}; background-size:200% 100%; animation:rf ${dur} linear infinite;`
             : `background:${c.bg};`;
-        const ts       = themedText(c, dur, g);
-        const barWidth = document.getElementById('goalBarWidth')?.value || '100%';
-        const label    = type === 'goal_tip' ? 'Tip Goal' : 'Milestone Goal';
-        const goalMax  = 3000;
-        let pct        = 5;
+        const ts        = themedText(c, dur, g);
+        const barWidth  = document.getElementById('goalBarWidth')?.value  || '100%';
+        const labelPos  = document.getElementById('goalLabelPos')?.value  || 'above';
+        const label     = type === 'goal_tip' ? 'Tip Goal' : 'Milestone Goal';
+        const goalMax   = 3000;
+        let pct         = 5;
 
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `width:${barWidth}; font-family:${f}; margin:0 auto;`;
-        wrapper.innerHTML =
-            `<div class="p-goal-trk">` +
-                `<div class="p-goal-fill" style="${fillStyle} width:${pct}%;"></div>` +
-                `<div class="p-goal-label" style="position:relative; z-index:10; padding:7px 14px; text-align:center; font-size:0.85rem; white-space:nowrap; ${ts}">` +
-                    `${label} &nbsp;·&nbsp; ${pct}% &nbsp;·&nbsp; ${Math.round(goalMax * pct / 100).toLocaleString()} / ${goalMax.toLocaleString()}` +
+
+        const labelText = (p) =>
+            `${label} &nbsp;·&nbsp; ${p}% &nbsp;·&nbsp; ${Math.round(goalMax * p / 100).toLocaleString()} / ${goalMax.toLocaleString()}`;
+        const outerLabelStyle = `text-align:center; font-size:0.9rem; white-space:nowrap; ${ts}`;
+
+        if (labelPos === 'above') {
+            wrapper.innerHTML =
+                `<div class="p-goal-label" style="${outerLabelStyle} margin-bottom:6px;">${labelText(pct)}</div>` +
+                `<div class="p-goal-trk" style="height:1.75rem;">` +
+                    `<div class="p-goal-fill" style="${fillStyle} width:${pct}%;"></div>` +
+                `</div>`;
+        } else if (labelPos === 'below') {
+            wrapper.innerHTML =
+                `<div class="p-goal-trk" style="height:1.75rem;">` +
+                    `<div class="p-goal-fill" style="${fillStyle} width:${pct}%;"></div>` +
                 `</div>` +
-            `</div>`;
+                `<div class="p-goal-label" style="${outerLabelStyle} margin-top:6px;">${labelText(pct)}</div>`;
+        } else {
+            /* inside — text sits inside the track (original behaviour) */
+            wrapper.innerHTML =
+                `<div class="p-goal-trk">` +
+                    `<div class="p-goal-fill" style="${fillStyle} width:${pct}%;"></div>` +
+                    `<div class="p-goal-label" style="position:relative; z-index:10; padding:7px 14px; text-align:center; font-size:0.85rem; white-space:nowrap; ${ts}">` +
+                        labelText(pct) +
+                    `</div>` +
+                `</div>`;
+        }
+
         stage.appendChild(wrapper);
 
         const fillEl  = wrapper.querySelector('.p-goal-fill');
@@ -839,7 +867,7 @@
         simInt = setInterval(() => {
             pct = pct >= 95 ? 5 : pct + 10;
             fillEl.style.width = pct + '%';
-            labelEl.innerHTML  = `${label} &nbsp;·&nbsp; ${pct}% &nbsp;·&nbsp; ${Math.round(goalMax * pct / 100).toLocaleString()} / ${goalMax.toLocaleString()}`;
+            labelEl.innerHTML  = labelText(pct);
         }, 1000);
     }
 
@@ -1102,22 +1130,41 @@
     function genGoal(c, f, g, dur, type) {
         const isTipGoal = type === 'goal_tip';
         const animCSS   = c.isGrad ? `background-size:200% 100%; animation:rf ${dur} linear infinite;` : '';
-        const barWidth  = document.getElementById('goalBarWidth')?.value || '100%';
+        const barWidth  = document.getElementById('goalBarWidth')?.value  || '100%';
+        const labelPos  = document.getElementById('goalLabelPos')?.value  || 'above';
+        const ff        = `font-family: ${f}, Impact, 'Arial Black', sans-serif !important;`;
+        const ts        = genTextStyle(c, dur, g);
+        const bgSize    = (c.isGrad || c.bg.includes('gradient'))
+                            ? 'background-size: 100vw 100% !important; background-position: left center !important;'
+                            : '';
+
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — ${isTipGoal ? 'Tip Goal' : 'Milestone Goal'} Overlay — ${new Date().toLocaleDateString()} */\n`;
-        /* Bar width override (when not full) — target the track element directly */
+
+        /* ── Bar width (when not full) ──────────────────────────────────── */
         if (barWidth !== '100%') {
             code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { width: ${barWidth} !important; margin: 0 auto !important; }\n`;
         }
-        /* Track background + border — Joystick injects inline style so [style] boosts specificity */
-        code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; overflow: hidden !important; }\n`;
-        /* Fill — direct child combinator; background-size:100vw so gradient spans full bar at any progress % */
-        const bgSize = (c.isGrad || c.bg.includes('gradient')) ? 'background-size: 100vw 100% !important; background-position: left center !important;' : '';
-        code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute { background: ${c.bg} !important; ${bgSize} ${animCSS} }\n`;
-        /* Text label (title · % · amount) inside track — font-size kept small so all three items fit one line */
-        /* Note: Joystick v2 removed milestone marker DOM elements — no marker CSS needed */
-        const ts = genTextStyle(c, dur, g);
-        code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { font-family: ${f}, Impact, 'Arial Black', sans-serif !important; font-size: 0.85rem !important; white-space: nowrap !important; ${ts} }\n`;
+
+        if (labelPos === 'inside') {
+            /* Text stays inside the bar — keep overflow:hidden so the fill is clipped by the track corners */
+            code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; overflow: hidden !important; }\n`;
+            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute { background: ${c.bg} !important; ${bgSize} ${animCSS} }\n`;
+            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} font-size: 0.85rem !important; white-space: nowrap !important; ${ts} }\n`;
+        } else {
+            /* Text floats outside the bar (above or below).
+               overflow must be visible so the label div can escape the track.
+               The fill gets its own border-radius to stay pill-shaped since the
+               parent can no longer clip it.  An explicit height keeps the bar
+               from collapsing once the label is taken out of flow. */
+            code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; overflow: visible !important; position: relative !important; height: 1.75rem !important; }\n`;
+            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute { background: ${c.bg} !important; ${bgSize} ${animCSS} border-radius: 9999px !important; }\n`;
+            const offset = labelPos === 'above'
+                ? 'bottom: calc(100% + 6px) !important; top: auto !important;'
+                : 'top: calc(100% + 6px) !important; bottom: auto !important;';
+            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} font-size: 0.9rem !important; white-space: nowrap !important; text-align: center !important; position: absolute !important; left: 0 !important; right: 0 !important; ${offset} ${ts} }\n`;
+        }
+
         const kf = c.isGrad ? KF_RF : '';
         return kf + code;
     }
