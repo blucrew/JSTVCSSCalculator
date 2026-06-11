@@ -843,7 +843,7 @@
         const goalFontSize    = document.getElementById('goalFontSize')?.value || '0.85rem';
         const labelText = (p) =>
             `${label} &nbsp;·&nbsp; ${Math.round(goalMax * p / 100)} / ${goalMax}`;
-        const outerLabelStyle = `text-align:center; font-size:${goalFontSize}; white-space:nowrap; ${ts}`;
+        const outerLabelStyle = `text-align:center; font-size:${goalFontSize}; white-space:nowrap; width:max-content; margin-left:auto; margin-right:auto; ${ts}`;
 
         if (labelPos === 'above') {
             wrapper.innerHTML =
@@ -1188,7 +1188,7 @@
             const offset = labelPos === 'above'
                 ? 'bottom: calc(100% + 6px) !important; top: auto !important;'
                 : 'top: calc(100% + 6px) !important; bottom: auto !important;';
-            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} ${fsRule}white-space: nowrap !important; text-align: center !important; position: absolute !important; left: 0 !important; right: 0 !important; ${offset} ${ts} }\n`;
+            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} ${fsRule}white-space: nowrap !important; position: absolute !important; left: 50% !important; right: auto !important; transform: translateX(-50%) !important; width: max-content !important; ${offset} ${ts} }\n`;
         }
 
         const kf = c.isGrad ? KF_RF : '';
