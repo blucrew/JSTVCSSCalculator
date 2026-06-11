@@ -1128,14 +1128,35 @@
 
     function genGoal(c, f, g, dur, type) {
         const isTipGoal = type === 'goal_tip';
-        const animCSS   = c.isGrad ? `background-size:200% 100%; animation:rf ${dur} linear infinite;` : '';
         const barWidth  = document.getElementById('goalBarWidth')?.value  || '100%';
         const labelPos  = document.getElementById('goalLabelPos')?.value  || 'above';
         const ff        = `font-family: ${f}, Impact, 'Arial Black', sans-serif !important;`;
         const ts        = genTextStyle(c, dur, g);
-        const bgSize    = (c.isGrad || c.bg.includes('gradient'))
-                            ? 'background-size: 100vw 100% !important; background-position: left center !important;'
-                            : '';
+
+        /* ── Fill background-size + animation ───────────────────────────────
+           Animated gradient needs 200% so the rf keyframe cycles colours.
+           Static gradient uses 100vw so the palette spans the full bar at
+           any progress %. They need different background-size values, so we
+           split them rather than letting animCSS fight bgSize for the same
+           property inside the same rule. */
+        let bgSize, animCSS;
+        if (c.isGrad) {
+            bgSize  = 'background-size: 200% 100% !important; background-position: 0% 50% !important;';
+            animCSS = `animation: rf ${dur} linear infinite !important;`;
+        } else if (c.bg.includes('gradient')) {
+            bgSize  = 'background-size: 100vw 100% !important; background-position: left center !important;';
+            animCSS = '';
+        } else {
+            bgSize  = '';
+            animCSS = '';
+        }
+
+        /* ── Label font size ─────────────────────────────────────────────────
+           Map the jtFontSize control (Tailwind names) to CSS values.
+           'Default'/empty → don't emit font-size so Joystick's own size wins. */
+        const fontSizeMap = { 'Base': '1rem', '2XL': '1.5rem', '3XL': '1.875rem', '4XL': '2.25rem', '6XL': '3.75rem', '8XL': '6rem' };
+        const jtFsVal     = document.getElementById('jtFontSize')?.value || '';
+        const fsRule      = fontSizeMap[jtFsVal] ? `font-size: ${fontSizeMap[jtFsVal]} !important; ` : '';
 
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — ${isTipGoal ? 'Tip Goal' : 'Milestone Goal'} Overlay — ${new Date().toLocaleDateString()} */\n`;
@@ -1149,7 +1170,7 @@
             /* Text stays inside the bar — keep overflow:hidden so the fill is clipped by the track corners */
             code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; overflow: hidden !important; }\n`;
             code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute { background: ${c.bg} !important; ${bgSize} ${animCSS} }\n`;
-            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} font-size: 0.85rem !important; white-space: nowrap !important; ${ts} }\n`;
+            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} ${fsRule}white-space: nowrap !important; ${ts} }\n`;
         } else {
             /* Text floats outside the bar (above or below).
                overflow must be visible so the label div can escape the track.
@@ -1161,7 +1182,7 @@
             const offset = labelPos === 'above'
                 ? 'bottom: calc(100% + 6px) !important; top: auto !important;'
                 : 'top: calc(100% + 6px) !important; bottom: auto !important;';
-            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} font-size: 0.9rem !important; white-space: nowrap !important; text-align: center !important; position: absolute !important; left: 0 !important; right: 0 !important; ${offset} ${ts} }\n`;
+            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} ${fsRule}white-space: nowrap !important; text-align: center !important; position: absolute !important; left: 0 !important; right: 0 !important; ${offset} ${ts} }\n`;
         }
 
         const kf = c.isGrad ? KF_RF : '';
