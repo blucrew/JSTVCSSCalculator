@@ -357,7 +357,9 @@
                 <option value="50%" selected>Half Width (50%)</option>
                 <option value="33%">One Third (33%)</option>
             </select>
-            <div class="sub-hint">Width resizes the bar in OBS — center-aligned</div>
+            <label style="margin-top:10px;">Goal Total (tokens)</label>
+            <input type="number" id="goalTokens" placeholder="e.g. 3000" min="1" step="1" style="width:100%;">
+            <div class="sub-hint">Shows exact token amounts in the preview &amp; adds a token reference table to the copied CSS</div>
         </div>
 
         <!-- ── 13. Event List bubble (list_ev only) ────── -->
@@ -818,22 +820,25 @@
        - Width driven by goalBarWidth control
        - Bar fills up 10% per second so the user can see it in action */
     function simGoal(c, f, g, dur, type) {
-        const stage     = document.getElementById('preview-stage');
-        const fillStyle = c.isGrad
+        const stage      = document.getElementById('preview-stage');
+        const fillStyle  = c.isGrad
             ? `background:${c.bg}; background-size:200% 100%; animation:rf ${dur} linear infinite;`
             : `background:${c.bg};`;
-        const ts        = themedText(c, dur, g);
-        const barWidth  = document.getElementById('goalBarWidth')?.value  || '100%';
-        const labelPos  = document.getElementById('goalLabelPos')?.value  || 'above';
-        const label     = type === 'goal_tip' ? 'Tip Goal' : 'Milestone Goal';
-        const goalMax   = 3000;
-        let pct         = 5;
+        const ts         = themedText(c, dur, g);
+        const barWidth   = document.getElementById('goalBarWidth')?.value  || '100%';
+        const labelPos   = document.getElementById('goalLabelPos')?.value  || 'above';
+        const goalTokens = parseInt(document.getElementById('goalTokens')?.value) || 0;
+        const goalMax    = goalTokens || 3000;
+        const label      = type === 'goal_tip' ? 'Tip Goal' : 'Milestone Goal';
+        let pct          = 5;
 
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `width:${barWidth}; font-family:${f}; margin:0 auto;`;
 
-        const labelText = (p) =>
-            `${label} &nbsp;·&nbsp; ${p}% &nbsp;·&nbsp; ${Math.round(goalMax * p / 100).toLocaleString()} / ${goalMax.toLocaleString()}`;
+        /* If a token total is set, show exact amounts; otherwise show % only */
+        const labelText = goalTokens
+            ? (p) => `${label} &nbsp;·&nbsp; ${p}% &nbsp;·&nbsp; ${Math.round(goalMax * p / 100).toLocaleString()} / ${goalMax.toLocaleString()} <span style="opacity:0.7;font-size:0.8em;">tokens</span>`
+            : (p) => `${label} &nbsp;·&nbsp; ${p}%`;
         const outerLabelStyle = `text-align:center; font-size:0.9rem; white-space:nowrap; ${ts}`;
 
         if (labelPos === 'above') {
@@ -1128,18 +1133,32 @@
     }
 
     function genGoal(c, f, g, dur, type) {
-        const isTipGoal = type === 'goal_tip';
-        const animCSS   = c.isGrad ? `background-size:200% 100%; animation:rf ${dur} linear infinite;` : '';
-        const barWidth  = document.getElementById('goalBarWidth')?.value  || '100%';
-        const labelPos  = document.getElementById('goalLabelPos')?.value  || 'above';
-        const ff        = `font-family: ${f}, Impact, 'Arial Black', sans-serif !important;`;
-        const ts        = genTextStyle(c, dur, g);
-        const bgSize    = (c.isGrad || c.bg.includes('gradient'))
-                            ? 'background-size: 100vw 100% !important; background-position: left center !important;'
-                            : '';
+        const isTipGoal  = type === 'goal_tip';
+        const animCSS    = c.isGrad ? `background-size:200% 100%; animation:rf ${dur} linear infinite;` : '';
+        const barWidth   = document.getElementById('goalBarWidth')?.value  || '100%';
+        const labelPos   = document.getElementById('goalLabelPos')?.value  || 'above';
+        const goalTokens = parseInt(document.getElementById('goalTokens')?.value) || 0;
+        const ff         = `font-family: ${f}, Impact, 'Arial Black', sans-serif !important;`;
+        const ts         = genTextStyle(c, dur, g);
+        const bgSize     = (c.isGrad || c.bg.includes('gradient'))
+                             ? 'background-size: 100vw 100% !important; background-position: left center !important;'
+                             : '';
 
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — ${isTipGoal ? 'Tip Goal' : 'Milestone Goal'} Overlay — ${new Date().toLocaleDateString()} */\n`;
+
+        /* ── Token reference table (when a goal total is provided) ──────── */
+        if (goalTokens > 0) {
+            const pairs = [[10,25],[50,75],[90,100]];
+            const fmt   = (n) => Math.round(goalTokens * n / 100).toLocaleString();
+            const row   = (a, b) =>
+                `   ${String(a+'%').padEnd(5)} = ${String(fmt(a)+' tokens').padEnd(18)}` +
+                `${String(b+'%').padEnd(5)} = ${fmt(b)} tokens`;
+            code += `/* ── Token Reference — ${goalTokens.toLocaleString()} token goal ${'─'.repeat(Math.max(0, 34 - goalTokens.toLocaleString().length))}\n`;
+            pairs.forEach(([a, b]) => { code += row(a, b) + '\n'; });
+            code += `   (Joystick shows % in the overlay — share these numbers with your chat)\n`;
+            code += `   ${'─'.repeat(57)} */\n`;
+        }
 
         /* ── Bar width (when not full) ──────────────────────────────────── */
         if (barWidth !== '100%') {
