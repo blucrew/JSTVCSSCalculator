@@ -344,7 +344,16 @@
 
         <!-- ── 12. Goal bar controls (goal types only) ─── -->
         <div id="groupGoal" class="group hidden">
-            <label>Label Position</label>
+            <label>Label Font Size</label>
+            <select id="goalFontSize">
+                <option value="0.7rem">XS — 0.7rem</option>
+                <option value="0.85rem" selected>S — 0.85rem (default)</option>
+                <option value="1rem">M — 1rem</option>
+                <option value="1.25rem">L — 1.25rem</option>
+                <option value="1.5rem">XL — 1.5rem</option>
+                <option value="1.875rem">2XL — 1.875rem</option>
+            </select>
+            <label style="margin-top:10px;">Label Position</label>
             <select id="goalLabelPos">
                 <option value="above" selected>Above the bar</option>
                 <option value="below">Below the bar</option>
@@ -831,9 +840,10 @@
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `width:${barWidth}; font-family:${f}; margin:0 auto;`;
 
+        const goalFontSize    = document.getElementById('goalFontSize')?.value || '0.85rem';
         const labelText = (p) =>
             `${label} &nbsp;·&nbsp; ${Math.round(goalMax * p / 100)} / ${goalMax}`;
-        const outerLabelStyle = `text-align:center; font-size:0.9rem; white-space:nowrap; ${ts}`;
+        const outerLabelStyle = `text-align:center; font-size:${goalFontSize}; white-space:nowrap; ${ts}`;
 
         if (labelPos === 'above') {
             wrapper.innerHTML =
@@ -852,7 +862,7 @@
             wrapper.innerHTML =
                 `<div class="p-goal-trk">` +
                     `<div class="p-goal-fill" style="${fillStyle} width:${pct}%;"></div>` +
-                    `<div class="p-goal-label" style="position:relative; z-index:10; padding:7px 14px; text-align:center; font-size:0.85rem; white-space:nowrap; ${ts}">` +
+                    `<div class="p-goal-label" style="position:relative; z-index:10; padding:7px 14px; text-align:center; font-size:${goalFontSize}; white-space:nowrap; ${ts}">` +
                         labelText(pct) +
                     `</div>` +
                 `</div>`;
@@ -1151,8 +1161,8 @@
             animCSS = '';
         }
 
-        /* Font size is left to Joystick's own overlay setting — we don't override it */
-        const fsRule = '';
+        const goalFontSize = document.getElementById('goalFontSize')?.value || '0.85rem';
+        const fsRule       = `font-size: ${goalFontSize} !important; `;
 
         let code = genHeader(f);
         code += `/* Generated Joystick.TV Styler — ${isTipGoal ? 'Tip Goal' : 'Milestone Goal'} Overlay — ${new Date().toLocaleDateString()} */\n`;
