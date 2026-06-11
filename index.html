@@ -52,7 +52,7 @@
         /* ── Goal bar ───────────────────────────────────── */
         /* No fixed height — let text inside determine it, matching v2 */
         .p-goal-trk { background: rgba(0,0,0,0.7); border: 2px solid #555; border-radius: 9999px; position: relative; overflow: hidden; }
-        .p-goal-fill { height: 100%; position: absolute; inset: 0; }
+        .p-goal-fill { height: 100%; position: absolute; inset: 0; transition: width 0.8s ease; }
 
         /* ── Toggle switch ──────────────────────────────── */
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
@@ -809,7 +809,8 @@
     /* simGoal — matches actual Joystick v2 DOM:
        - Text (title · % · amount) is INSIDE the bar track, not above it
        - No milestone markers (v2 removed them)
-       - Width driven by goalBarWidth control */
+       - Width driven by goalBarWidth control
+       - Bar fills up 10% per second so the user can see it in action */
     function simGoal(c, f, g, dur, type) {
         const stage     = document.getElementById('preview-stage');
         const fillStyle = c.isGrad
@@ -818,16 +819,28 @@
         const ts       = themedText(c, dur, g);
         const barWidth = document.getElementById('goalBarWidth')?.value || '100%';
         const label    = type === 'goal_tip' ? 'Tip Goal' : 'Milestone Goal';
-        const wrapper  = document.createElement('div');
+        const goalMax  = 3000;
+        let pct        = 5;
+
+        const wrapper = document.createElement('div');
         wrapper.style.cssText = `width:${barWidth}; font-family:${f}; margin:0 auto;`;
         wrapper.innerHTML =
             `<div class="p-goal-trk">` +
-                `<div class="p-goal-fill" style="${fillStyle} width:50%;"></div>` +
-                `<div style="position:relative; z-index:10; padding:7px 14px; text-align:center; font-size:0.85rem; white-space:nowrap; ${ts}">` +
-                    `${label} &nbsp;·&nbsp; 50% &nbsp;·&nbsp; 1,500 / 3,000` +
+                `<div class="p-goal-fill" style="${fillStyle} width:${pct}%;"></div>` +
+                `<div class="p-goal-label" style="position:relative; z-index:10; padding:7px 14px; text-align:center; font-size:0.85rem; white-space:nowrap; ${ts}">` +
+                    `${label} &nbsp;·&nbsp; ${pct}% &nbsp;·&nbsp; ${Math.round(goalMax * pct / 100).toLocaleString()} / ${goalMax.toLocaleString()}` +
                 `</div>` +
             `</div>`;
         stage.appendChild(wrapper);
+
+        const fillEl  = wrapper.querySelector('.p-goal-fill');
+        const labelEl = wrapper.querySelector('.p-goal-label');
+
+        simInt = setInterval(() => {
+            pct = pct >= 95 ? 5 : pct + 10;
+            fillEl.style.width = pct + '%';
+            labelEl.innerHTML  = `${label} &nbsp;·&nbsp; ${pct}% &nbsp;·&nbsp; ${Math.round(goalMax * pct / 100).toLocaleString()} / ${goalMax.toLocaleString()}`;
+        }, 1000);
     }
 
     const jtAnimKF = `
