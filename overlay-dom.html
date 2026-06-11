@@ -58,7 +58,7 @@
 
 <header>
     <h1>Overlay DOM Reference</h1>
-    <a href="css.html">← Back to CSS Styler</a>
+    <a href="index.html">← Back to CSS Styler</a>
 </header>
 
 <div class="container">
@@ -180,7 +180,8 @@ span.uppercase.font-bold::after,
     </div>
 
     <!-- ── LABELS ────────────────────────────────────────── -->
-    <h2>Latest Follower / Latest Tipper Labels <span class="badge badge-confirmed">Confirmed</span></h2>
+    <h2>Follower / Tipper / Chat Timer Labels <span class="badge badge-confirmed">Confirmed</span></h2>
+    <p style="color:#888; font-size:0.85rem;">Confirmed via live OBS DOM inspection (v2). Applies to: Latest Follower, Latest Sub, Chat Timer.</p>
 
     <div class="card">
         <table class="selector-table">
@@ -190,71 +191,122 @@ span.uppercase.font-bold::after,
             <tbody>
                 <tr>
                     <td>Text element</td>
-                    <td><code>div.w-full.h-full.scrollable.text-3xl</code><code>[class*="scrollable"]</code></td>
-                    <td>Has inline <code>background-color</code> set by JS — must override with <code>background-color: transparent !important</code>.</td>
+                    <td><code>body.layout-overlay div[class][style]</code></td>
+                    <td>In v2 the display text is a <strong>text node directly inside</strong> this div — there is no child <code>&lt;span&gt;</code> or <code>&lt;div&gt;</code>. The <code>body.layout-overlay</code> scope prevents bleeding into other overlay types. Has inline <code>background-color</code> and <code>color</code> set by JS — always use <code>!important</code>.</td>
                 </tr>
             </tbody>
         </table>
 
-        <pre><code>/* Latest follower / tipper label */
-div.scrollable.text-3xl[style],
-[class*="scrollable"] {
-  font-family: 'Your Font', sans-serif !important;
+        <div class="warn"><strong>v2 change:</strong> The old <code>div.scrollable.text-3xl</code> and <code>[class*="scrollable"]</code> selectors targeted v1 DOM classes that no longer exist. Replace them with <code>body.layout-overlay div[class][style]</code>.</div>
+
+        <pre><code>/* Latest Follower / Latest Sub / Chat Timer — v2 */
+body.layout-overlay div[class][style] {
+  font-family: 'Your Font', Impact, 'Arial Black', sans-serif !important;
   color: #ffffff !important;
   background-color: transparent !important;
   text-align: center !important;
+  font-weight: 900 !important;
 }</code></pre>
     </div>
 
-    <!-- ── MILESTONE ─────────────────────────────────────── -->
-    <h2>Milestone / Goal Bar <span class="badge badge-confirmed">Confirmed</span></h2>
-    <p style="color:#888; font-size:0.85rem;">Verified against live DOM — silasblu's milestone overlay inspected at 89% progress.</p>
+    <!-- ── GOAL BAR ───────────────────────────────────────── -->
+    <h2>Tip Goal / Milestone Goal Bar <span class="badge badge-confirmed">Confirmed</span></h2>
+    <p style="color:#888; font-size:0.85rem;">Confirmed from v2 bundle + OBS live DOM. The old <code>bg-pink-200</code> track selector is a v1 class and no longer exists.</p>
 
     <div class="card">
+        <h3>DOM structure</h3>
+        <p>All three elements — track, fill, and label — share the same parent. The label is a direct child of the track.</p>
+        <pre><code>&lt;div class="w-full overflow-hidden rounded-full border-2" style="..."&gt;  &lt;!-- track --&gt;
+  &lt;div class="absolute inset-0" style="width: X%; background: ..."&gt;&lt;/div&gt;   &lt;!-- fill --&gt;
+  &lt;div class="relative z-10 ..."&gt;Goal Name · X% · amount/total&lt;/div&gt;       &lt;!-- label --&gt;
+&lt;/div&gt;</code></pre>
+
         <table class="selector-table">
             <thead>
                 <tr><th>Element</th><th>Selector</th><th>Notes</th></tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>Milestone text</td>
-                    <td><code>span.text-3xl</code></td>
-                    <td>Has inline <code>style="color: rgb(255,255,255)"</code> set by JS — use <code>!important</code> to override. Sits above the progress bar in the DOM.</td>
-                </tr>
-                <tr>
                     <td>Progress track</td>
-                    <td><code>div.w-full.bg-pink-200.rounded-full</code><code>[class*="bg-pink-200"]</code></td>
-                    <td>Wildcard form catches palette shade variations if Joystick updates (e.g. <code>bg-pink-300</code>). Contains the fill div as a direct child.</td>
+                    <td><code>div.w-full.overflow-hidden.rounded-full.border-2[style]</code></td>
+                    <td>The <code>[style]</code> attribute selector boosts specificity to beat Joystick's JS-injected inline styles. Contains fill and label as direct children.</td>
                 </tr>
                 <tr>
                     <td>Progress fill</td>
-                    <td><code>div.bg-pink-200 > div[style]</code><code>div.text-xs.font-medium.rounded-full[style]</code></td>
-                    <td>Has classes <code>text-xs font-medium text-white text-center p-0.5 leading-none rounded-full</code>. Width and background are both set inline by JS — e.g. <code>style="width: 89%; background: rgb(255,0,0)"</code>. Both need <code>!important</code> to override.</td>
+                    <td><code>div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute</code></td>
+                    <td><code>width</code> and <code>background</code> are both set inline by JS. Width animates from 0–100% as the goal progresses. Override both with <code>!important</code>.</td>
+                </tr>
+                <tr>
+                    <td>Label text<br><em>(title · % · amount)</em></td>
+                    <td><code>div.w-full.overflow-hidden.rounded-full.border-2 > div.relative</code></td>
+                    <td>Physically inside the track div. By default it renders inside the bar. See Label Position below to move it outside.</td>
                 </tr>
             </tbody>
         </table>
+    </div>
 
-        <pre><code>/* Progress track */
-div.w-full.bg-pink-200.rounded-full,
-[class*="bg-pink-200"] {
+    <div class="card">
+        <h3>Label Position — Inside the bar (default)</h3>
+        <p>The label renders inside the track. Keep <code>overflow: hidden</code> so the fill is clipped by the track's rounded corners.</p>
+        <pre><code>/* Track */
+div.w-full.overflow-hidden.rounded-full.border-2[style] {
   background: rgba(0,0,0,0.7) !important;
-  border: 2px solid #00d2ff !important;
-  border-radius: 16px !important;
+  border: 2px solid #555 !important;
   overflow: hidden !important;
 }
 
-/* Progress fill — override JS-injected width and background */
-div.bg-pink-200 > div[style],
-div.text-xs.font-medium.rounded-full[style] {
+/* Fill */
+div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute {
   background: linear-gradient(90deg, #00d2ff, #00ff99) !important;
-  height: 100% !important;
+  background-size: 100vw 100% !important;
+  background-position: left center !important;
 }
 
-/* Milestone label text */
-span.text-3xl {
+/* Label */
+div.w-full.overflow-hidden.rounded-full.border-2 > div.relative {
+  font-family: 'Your Font', Impact, 'Arial Black', sans-serif !important;
+  font-size: 0.85rem !important;
+  white-space: nowrap !important;
   color: #ffffff !important;
-  font-family: 'Your Font', sans-serif !important;
 }</code></pre>
+    </div>
+
+    <div class="card">
+        <h3>Label Position — Above or Below the bar</h3>
+        <p>The label is physically inside the track in the DOM, so moving it outside requires a CSS-only trick: set <code>overflow: visible</code> on the track (so the label can escape) and give the fill its own <code>border-radius</code> (so it clips itself instead of relying on the parent).</p>
+
+        <div class="callout"><strong>Why the explicit height?</strong> Once the label is positioned absolutely, it's out of normal flow and no longer contributes to the track's height. Without <code>height: 1.75rem</code> the track collapses to 0px.</div>
+
+        <pre><code>/* Track — overflow:visible lets the label div escape */
+div.w-full.overflow-hidden.rounded-full.border-2[style] {
+  background: rgba(0,0,0,0.7) !important;
+  border: 2px solid #555 !important;
+  overflow: visible !important;     /* key change */
+  position: relative !important;
+  height: 1.75rem !important;       /* explicit height since label is out of flow */
+}
+
+/* Fill — self-clips since parent overflow is now visible */
+div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute {
+  background: linear-gradient(90deg, #00d2ff, #00ff99) !important;
+  background-size: 100vw 100% !important;
+  background-position: left center !important;
+  border-radius: 9999px !important; /* pill shape at any progress % */
+}
+
+/* Label — ABOVE the bar */
+div.w-full.overflow-hidden.rounded-full.border-2 > div.relative {
+  font-family: 'Your Font', Impact, 'Arial Black', sans-serif !important;
+  font-size: 0.9rem !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  color: #ffffff !important;
+  position: absolute !important;
+  left: 0 !important; right: 0 !important;
+  bottom: calc(100% + 6px) !important;  /* swap to top: calc(100% + 6px) for below */
+  top: auto !important;
+}</code></pre>
+        <p style="margin-top:12px;">For <strong>Below the bar</strong>, swap to <code>top: calc(100% + 6px) !important; bottom: auto !important;</code></p>
     </div>
 
     <!-- ── FONTS ─────────────────────────────────────────── -->
