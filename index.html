@@ -1176,7 +1176,7 @@
             /* Text stays inside the bar — keep overflow:hidden so the fill is clipped by the track corners */
             code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; overflow: hidden !important; }\n`;
             code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute { background: ${c.bg} !important; ${bgSize} ${animCSS} }\n`;
-            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} ${fsRule}white-space: nowrap !important; ${ts} }\n`;
+            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} ${fsRule}white-space: nowrap !important; letter-spacing: 0.04em !important; word-spacing: 0.15em !important; ${ts} }\n`;
         } else {
             /* Text floats outside the bar (above or below).
                overflow must be visible so the label div can escape the track.
@@ -1186,9 +1186,9 @@
             code += `div.w-full.overflow-hidden.rounded-full.border-2[style] { background: rgba(0,0,0,0.7) !important; border: 2px solid #555 !important; overflow: visible !important; position: relative !important; height: 1.75rem !important; }\n`;
             code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.absolute { background: ${c.bg} !important; ${bgSize} ${animCSS} border-radius: 9999px !important; }\n`;
             const offset = labelPos === 'above'
-                ? 'bottom: calc(100% + 6px) !important; top: auto !important;'
-                : 'top: calc(100% + 6px) !important; bottom: auto !important;';
-            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} ${fsRule}white-space: nowrap !important; position: absolute !important; left: 50% !important; right: auto !important; transform: translateX(-50%) !important; width: max-content !important; ${offset} ${ts} }\n`;
+                ? 'bottom: calc(100% + 8px) !important; top: auto !important;'
+                : 'top: calc(100% + 8px) !important; bottom: auto !important;';
+            code += `div.w-full.overflow-hidden.rounded-full.border-2 > div.relative { ${ff} ${fsRule}white-space: nowrap !important; letter-spacing: 0.04em !important; word-spacing: 0.15em !important; position: absolute !important; left: 50% !important; right: auto !important; transform: translateX(-50%) !important; width: max-content !important; ${offset} ${ts} }\n`;
         }
 
         const kf = c.isGrad ? KF_RF : '';
