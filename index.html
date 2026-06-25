@@ -130,9 +130,10 @@
         <div class="group">
             <label>Preview Background</label>
             <div style="display:flex; gap:8px; align-items:center;">
-                <button id="bgUploadBtn" class="btn-secondary" style="flex:1;">📷 Upload Image</button>
+                <button id="bgUploadBtn" class="btn-secondary" style="flex:1;">📷 Set Preview Background</button>
                 <button id="bgClearBtn" class="btn-secondary" style="display:none;">✕ Clear</button>
             </div>
+            <div class="sub-hint" style="color:#e87c3e;">Preview only — this image is NOT added to your overlay or generated CSS</div>
             <input type="file" id="bgFileInput" accept="image/*" style="display:none;">
             <canvas id="bgCanvas" title="Click anywhere to sample that color as your Glow Color"></canvas>
             <div class="canvas-hint" id="canvasHint">
